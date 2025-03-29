@@ -14,7 +14,7 @@ class Axis(int, enum.Enum):
     def to_list(self):
         return [1 if i == self.value else 0 for i in range(3)]
 
-class JointType(Enum):
+class JointType(int, enum.Enum):
     """
     Enum for readable joint types.
     """

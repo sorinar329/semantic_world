@@ -1,3 +1,4 @@
 networkx
 numpy
 trimesh
+typing_extensions
