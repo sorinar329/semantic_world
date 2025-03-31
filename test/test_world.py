@@ -15,13 +15,13 @@ class WorldTestCase(unittest.TestCase):
         self.assertEqual(l1.name, "link_1")
         self.assertEqual(l2.name, "link_2")
 
-        world.add_node(l1)
-        world.add_node(l2)
-        world.add_edge(world.root, l1)
-        world.add_edge(world.root, l2)
+        world.add_link(l1)
+        world.add_link(l2)
+        world.kinematic_structure.add_edge(world.root, l1)
+        world.kinematic_structure.add_edge(world.root, l2)
         world.validate()
 
-        path = nx.shortest_path(world, l1, l2)
+        path = nx.shortest_path(world.kinematic_structure, l1, l2)
         self.assertEqual(len(path), 3)
 
 

@@ -151,46 +151,57 @@ class Joint(WorldEntity):
         return hash((self.parent, self.child))
 
 
-class World(nx.Graph):
+class World:
     """
-    A class representing the world as a graph.
-    The graph must be a tree.
+    A class representing the world.
+    The world manages a set of links and joints represented as a tree-like graph.
     The nodes represent links in the world, and the edges represent joins between them.
     """
 
     root: Link
+    """
+    The root link of the world.
+    """
 
-    def __init__(self):
+    kinematic_structure: nx.Graph
+    """
+    The kinematic structure of the world.
+    The kinematic structure is a tree-like graph where the nodes represent links in the world,
+    and the edges represent joints between them.
+    """
+
+    def __init__(self, root: Optional[Link] = None, kinematic_structure: Optional[nx.Graph] = None):
         super().__init__()
-        self.root = Link(name="map", origin=PoseStamped())
-        self.add_node(self.root)
+
+        if not root:
+            root = Link(name="map", origin=PoseStamped())
+        self.root = root
+
+        if not kinematic_structure:
+            kinematic_structure = nx.Graph()
+        self.kinematic_structure = kinematic_structure
+
+        self.add_link(self.root)
 
     def validate(self):
         """
         Validate the world.
         The world must be a tree.
         """
-        if not nx.is_tree(self):
+        if not nx.is_tree(self.kinematic_structure):
             raise ValueError("The world is not a tree.")
 
-    def add_node(self, node: WorldEntity, **attr):
+    def add_link(self, link: Link):
         """
-        Add a node to the world.
+        Add a link to the world.
         """
-        super().add_node(node, **attr)
-        node._world = self
+        self.kinematic_structure.add_node(link)
+        link._world = self
 
-    def add_joint(self, joint: Joint, **attr):
+    def add_joint(self, joint: Joint):
         """
         Add a joint to the world.
         """
-        self.add_node(joint.parent)
-        self.add_node(joint.child)
-        super().add_edge(joint.parent, joint.child, joint=joint, **attr)
-
-    def add_nodes(self, nodes: List[WorldEntity], **attr):
-        """
-        Add multiple nodes to the world.
-        """
-        for node in nodes:
-            self.add_node(node, **attr)
+        self.add_link(joint.parent)
+        self.add_link(joint.child)
+        self.kinematic_structure.add_edge(joint.parent, joint.child, joint=joint)
