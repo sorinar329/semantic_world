@@ -12,7 +12,6 @@ class URDFParserTestCase(unittest.TestCase):
 
     def test_parsing(self):
         world = self.parser.parse()
-        # world.plot_structure()
         world.validate()
         self.assertEqual(len(world.bodies), 6)
 
