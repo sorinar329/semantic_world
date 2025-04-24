@@ -8,7 +8,7 @@ from ..world import World, Link, Joint
 from urdf_parser_py import urdf
 
 from ..geometry import Color
-from ..enums import JointType, AxisIdentifier
+from ..enums import JointType, Axis
 from ..utils import suppress_stdout_stderr
 from .ros import get_ros_package_path
 
@@ -31,7 +31,6 @@ class URDFParser:
         self.file_path = file
 
     def parse(self) -> World:
-        world = World()
 
         with open(self.file_path, 'r') as file:
             # Since parsing URDF causes a lot of warning messages which can't be deactivated, we suppress them
@@ -46,6 +45,7 @@ class URDFParser:
             parsed_joint = self.parse_joint(joint, parent, child)
             joints.append(parsed_joint)
 
+        world = World(root=links[0])
         [world.add_joint(joint) for joint in joints]
         [world.add_link(link) for link in links]
 
@@ -69,15 +69,15 @@ class URDFParser:
         child.origin = origin
         return result
 
-    def parse_joint_axis(self, axis) -> JointAxis:
-        result = JointAxis.X
+    def parse_joint_axis(self, axis) -> Axis:
+        result = Axis.X
         if axis:
             if axis[0]:
-                result = JointAxis.X
+                result = Axis.X
             elif axis[1]:
-                result = JointAxis.Y
+                result = Axis.Y
             elif axis[2]:
-                result = JointAxis.Z
+                result = Axis.Z
         return result
 
     def visual_of_link(self, link: urdf.Link) -> List[Shape]:

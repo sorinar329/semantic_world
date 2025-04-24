@@ -1,10 +1,25 @@
+import os.path
 import unittest
+from semantic_world.adapters.urdf import URDFParser
+from semantic_world.enums import JointType
 
 
 class URDFParserTestCase(unittest.TestCase):
+    file = os.path.join(os.getcwd(), "..", "resources", "urdf", "table.urdf")
 
-    def test_something(self):
-        self.assertEqual(True, False)  # add assertion here
+    def setUp(self):
+        self.parser = URDFParser(self.file)
+
+    def test_parsing(self):
+        world = self.parser.parse()
+        # world.plot_structure()
+        world.validate()
+        self.assertEqual(len(world.links), 6)
+
+        origin_left_front_leg_joint = world.get_joint(world.root, world.links[1])
+        self.assertEqual(origin_left_front_leg_joint.type, JointType.FIXED)
+        self.assertEqual(origin_left_front_leg_joint.child.origin.pose.position.x, -4)
+
 
 
 if __name__ == '__main__':

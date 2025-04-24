@@ -3,9 +3,7 @@ import enum
 
 class Axis(int, enum.Enum):
     """
-    Enum for axis identifiers used in Joints.
-
-    Currently, joints over multiple axis are not supported (ball joint, etc.)
+    Enum for axis identifiers in 3D.
     """
     X = 0
     Y = 1
