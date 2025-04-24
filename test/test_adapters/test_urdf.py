@@ -5,7 +5,7 @@ from semantic_world.enums import JointType
 
 
 class URDFParserTestCase(unittest.TestCase):
-    file = os.path.join(os.getcwd(), "..", "resources", "urdf", "table.urdf")
+    file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "resources", "urdf", "table.urdf")
 
     def setUp(self):
         self.parser = URDFParser(self.file)
