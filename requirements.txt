@@ -4,3 +4,4 @@ trimesh
 typing_extensions
 urdf-parser-py
 matplotlib
+pycram_bullet

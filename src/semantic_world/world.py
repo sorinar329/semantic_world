@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing_extensions import List, Optional
+
 import networkx as nx
+from typing_extensions import List, Optional
 
 from .enums import JointType, Axis
 from .geometry import Shape
@@ -10,6 +11,7 @@ from .pose import PoseStamped
 from .utils import IDGenerator
 
 id_generator = IDGenerator()
+
 
 @dataclass
 class WorldEntity:
@@ -26,6 +28,7 @@ class WorldEntity:
     """
     The views this entity is part of.
     """
+
 
 @dataclass
 class Body(WorldEntity):
@@ -74,6 +77,7 @@ class View(WorldEntity):
 
     This class can hold references to certain bodies that gain meaning in this context.
     """
+
 
 @dataclass
 class Connection(WorldEntity):
@@ -129,6 +133,7 @@ class Connection(WorldEntity):
     def __hash__(self):
         return hash((self.parent, self.child))
 
+
 @dataclass
 class World:
     """
@@ -166,7 +171,8 @@ class World:
 
     @property
     def connections(self) -> List[Connection]:
-        return [self.kinematic_structure.get_edge_data(*edge)[Connection.__name__] for edge in self.kinematic_structure.edges()]
+        return [self.kinematic_structure.get_edge_data(*edge)[Connection.__name__] for edge in
+                self.kinematic_structure.edges()]
 
     def add_body(self, body: Body):
         """
@@ -224,4 +230,3 @@ class World:
         plt.title("World Kinematic Structure")
         plt.axis('off')  # Hide axes
         plt.show()
-
