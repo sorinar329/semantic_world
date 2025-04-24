@@ -14,9 +14,9 @@ class URDFParserTestCase(unittest.TestCase):
         world = self.parser.parse()
         # world.plot_structure()
         world.validate()
-        self.assertEqual(len(world.links), 6)
+        self.assertEqual(len(world.bodies), 6)
 
-        origin_left_front_leg_joint = world.get_joint(world.root, world.links[1])
+        origin_left_front_leg_joint = world.get_joint(world.root, world.bodies[1])
         self.assertEqual(origin_left_front_leg_joint.type, JointType.FIXED)
         self.assertEqual(origin_left_front_leg_joint.child.origin.pose.position.x, -4)
 

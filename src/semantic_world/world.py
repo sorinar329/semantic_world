@@ -28,7 +28,7 @@ class WorldEntity:
     """
 
 @dataclass
-class Link(WorldEntity):
+class Body(WorldEntity):
     """
     Represents a link in the world.
     A link is a semantic atom. This means that a link cannot be decomposed into meaningful smaller parts.
@@ -64,39 +64,33 @@ class Link(WorldEntity):
     def __hash__(self):
         return hash(self.name)
 
-    @property
-    def joints(self) -> List[Joint]:
-        """
-        Returns all joints that are connected to this link.
-        """
-
     def __eq__(self, other):
         return self.name == other.name
 
 
 class View(WorldEntity):
     """
-    Represents a view on a set of links in the world.
+    Represents a view on a set of bodies in the world.
 
-    This class can hold references to certain links that gain meaning in this context.
+    This class can hold references to certain bodies that gain meaning in this context.
     """
 
 @dataclass
-class Joint(WorldEntity):
+class Connection(WorldEntity):
     """
-    Represents a joint in the world.
+    Represents a connection between two bodies in the world.
     """
     type: JointType = JointType.UNKNOWN
     """
     The type of the joint.
     """
 
-    parent: Link = None
+    parent: Body = None
     """
     The parent link of the joint.
     """
 
-    child: Link = None
+    child: Body = None
     """
     The child link of the joint.
     """
@@ -139,11 +133,11 @@ class Joint(WorldEntity):
 class World:
     """
     A class representing the world.
-    The world manages a set of links and joints represented as a tree-like graph.
-    The nodes represent links in the world, and the edges represent joins between them.
+    The world manages a set of bodies and connections represented as a tree-like graph.
+    The nodes represent bodies in the world, and the edges represent joins between them.
     """
 
-    root: Link = field(default=Link(name="map", origin=PoseStamped()), kw_only=True)
+    root: Body = field(default=Body(name="map", origin=PoseStamped()), kw_only=True)
     """
     The root link of the world.
     """
@@ -151,12 +145,12 @@ class World:
     kinematic_structure: nx.DiGraph = field(default_factory=nx.DiGraph, kw_only=True, repr=False)
     """
     The kinematic structure of the world.
-    The kinematic structure is a tree-like directed graph where the nodes represent links in the world,
-    and the edges represent joints between them.
+    The kinematic structure is a tree-like directed graph where the nodes represent bodies in the world,
+    and the edges represent connections between them.
     """
 
     def __post_init__(self):
-        self.add_link(self.root)
+        self.add_body(self.root)
 
     def validate(self):
         """
@@ -167,36 +161,36 @@ class World:
             raise ValueError("The world is not a tree.")
 
     @property
-    def links(self) -> List[Link]:
+    def bodies(self) -> List[Body]:
         return list(self.kinematic_structure.nodes())
 
     @property
-    def joints(self) -> List[Joint]:
-        return [self.kinematic_structure.get_edge_data(*edge)[Joint.__name__] for edge in self.kinematic_structure.edges()]
+    def connections(self) -> List[Connection]:
+        return [self.kinematic_structure.get_edge_data(*edge)[Connection.__name__] for edge in self.kinematic_structure.edges()]
 
-    def add_link(self, link: Link):
+    def add_body(self, body: Body):
         """
         Add a link to the world.
         """
-        self.kinematic_structure.add_node(link)
-        link._world = self
+        self.kinematic_structure.add_node(body)
+        body._world = self
 
-    def add_joint(self, joint: Joint):
+    def add_connection(self, connection: Connection):
         """
         Add a joint to the world.
         """
-        self.add_link(joint.parent)
-        self.add_link(joint.child)
-        kwargs = {Joint.__name__: joint}
-        self.kinematic_structure.add_edge(joint.parent, joint.child, **kwargs)
+        self.add_body(connection.parent)
+        self.add_body(connection.child)
+        kwargs = {Connection.__name__: connection}
+        self.kinematic_structure.add_edge(connection.parent, connection.child, **kwargs)
 
-    def get_joint(self, parent: Link, child: Link) -> Joint:
-        return self.kinematic_structure.get_edge_data(parent, child)[Joint.__name__]
+    def get_joint(self, parent: Body, child: Body) -> Connection:
+        return self.kinematic_structure.get_edge_data(parent, child)[Connection.__name__]
 
     def plot_structure(self):
         """
         Plots the kinematic structure of the world.
-        The plot shows links as nodes and joints as edges in a directed graph.
+        The plot shows bodies as nodes and connections as edges in a directed graph.
         """
         import matplotlib.pyplot as plt
 
@@ -206,12 +200,12 @@ class World:
         # Use spring layout for node positioning
         pos = nx.drawing.bfs_layout(self.kinematic_structure, start=self.root)
 
-        # Draw nodes (links)
+        # Draw nodes (bodies)
         nx.draw_networkx_nodes(self.kinematic_structure, pos,
                                node_color='lightblue',
                                node_size=2000)
 
-        # Draw edges (joints)
+        # Draw edges (connections)
         edges = self.kinematic_structure.edges(data=True)
         nx.draw_networkx_edges(self.kinematic_structure, pos,
                                edge_color='gray',

@@ -5,7 +5,7 @@ from typing_extensions import Optional, List, Union
 
 from ..geometry import Shape, Box, Mesh, Cylinder
 from ..pose import Vector3, Quaternion, Pose, Header, PoseStamped
-from ..world import World, Link, Joint
+from ..world import World, Body, Connection
 from urdf_parser_py import urdf
 
 from ..geometry import Color
@@ -48,12 +48,12 @@ class URDFParser:
             joints.append(parsed_joint)
 
         world = World(root=links[0])
-        [world.add_joint(joint) for joint in joints]
-        [world.add_link(link) for link in links]
+        [world.add_connection(joint) for joint in joints]
+        [world.add_body(link) for link in links]
 
         return world
 
-    def parse_joint(self, joint: urdf.Joint, parent: Link, child: Link) -> Joint:
+    def parse_joint(self, joint: urdf.Joint, parent: Body, child: Body) -> Connection:
         axis = self.parse_joint_axis(joint.axis)
 
         lower = None
@@ -65,8 +65,8 @@ class URDFParser:
         origin = self.urdf_pose_to_pose(joint.origin)
         origin = PoseStamped(origin, Header(frame_id=parent.name))
 
-        result = Joint(type=joint_type_map[joint.type], parent=parent, child=child,
-                       axis=axis, lower_limit=lower, upper_limit=upper, origin=origin)
+        result = Connection(type=joint_type_map[joint.type], parent=parent, child=child,
+                            axis=axis, lower_limit=lower, upper_limit=upper, origin=origin)
 
         child.origin = origin
         return result
@@ -140,13 +140,13 @@ class URDFParser:
         return Cylinder(radius=cylinder.radius, length=cylinder.length, origin=self.as_pose_stamped(self.urdf_pose_to_pose(shape.origin), link), color=color)
 
 
-    def parse_link(self, link: urdf.Link) -> Link:
+    def parse_link(self, link: urdf.Link) -> Body:
         """
         Parses a URDF link to a link object.
         :param link: The URDF link to parse.
         :return: The parsed link object.
         """
-        return Link(link.name, visual=self.visual_of_link(link), collision=self.collision_of_link(link))
+        return Body(link.name, visual=self.visual_of_link(link), collision=self.collision_of_link(link))
 
     def urdf_pose_to_pose(self, pose: urdf.Pose) -> Pose:
         if pose:
@@ -154,5 +154,5 @@ class URDFParser:
         else:
             return Pose()
 
-    def as_pose_stamped(self, pose: Pose, link: Link):
+    def as_pose_stamped(self, pose: Pose, link: Body):
         return PoseStamped(pose=pose, header=Header(frame_id=link.name))
