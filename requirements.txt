@@ -2,3 +2,4 @@ networkx
 numpy
 trimesh
 typing_extensions
+urdf-parser-py

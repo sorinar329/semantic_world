@@ -80,21 +80,6 @@ class View(WorldEntity):
 
     This class can hold references to certain links that gain meaning in this context.
     """
-    links: List[Link] = field(default_factory=list)
-    """
-    The links that are part of this view.
-    """
-
-    name: str = field(default_factory=lambda: f"view_{id_generator(None)}")
-    """
-    The name of the view. Must be unique in the world.
-    """
-
-    origin: PoseStamped = PoseStamped()
-    """
-    The pose of the view in the world.
-    """
-
 
 @dataclass
 class Joint(WorldEntity):
@@ -178,7 +163,7 @@ class World:
         self.root = root
 
         if not kinematic_structure:
-            kinematic_structure = nx.Graph()
+            kinematic_structure = nx.DiGraph()
         self.kinematic_structure = kinematic_structure
 
         self.add_link(self.root)
