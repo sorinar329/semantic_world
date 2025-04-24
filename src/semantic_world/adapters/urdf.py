@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass
 
 from typing_extensions import Optional, List, Union
 
@@ -20,15 +21,16 @@ joint_type_map = {'unknown': JointType.UNKNOWN,
                  'planar': JointType.PLANAR,
                  'fixed': JointType.FIXED}
 
+@dataclass
 class URDFParser:
     """
-    Class to parse URDF files to world objects.
+    Class to parse URDF files to worlds.
     """
 
     file_path: str
-
-    def __init__(self, file: str):
-        self.file_path = file
+    """
+    The file path of the URDF.
+    """
 
     def parse(self) -> World:
 

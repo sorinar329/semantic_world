@@ -111,8 +111,7 @@ class Cylinder(Capsule):
 @dataclass
 class Box(Primitive):
     """
-    A box shape.
-    Pivot point is at the center of the box.
+    A box shape. Pivot point is at the center of the box.
     """
     length: float = 1.0
     """
