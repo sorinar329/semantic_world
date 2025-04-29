@@ -13,18 +13,18 @@ from .utils import IDGenerator
 id_generator = IDGenerator()
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class WorldEntity:
     """
     A class representing an entity in the world.
     """
 
-    _world: Optional[World] = field(default=None, init=False, repr=False)
+    _world: Optional[World] = field(default=None, init=False, repr=False, hash=False)
     """
     The backreference to the world this entity belongs to.
     """
 
-    _views: List[View] = field(default_factory=list, init=False, repr=False)
+    _views: List[View] = field(default_factory=list, init=False, repr=False, hash=False)
     """
     The views this entity is part of.
     """
@@ -71,6 +71,7 @@ class Body(WorldEntity):
         return self.name == other.name
 
 
+@dataclass
 class View(WorldEntity):
     """
     Represents a view on a set of bodies in the world.
@@ -152,6 +153,11 @@ class World:
     The kinematic structure of the world.
     The kinematic structure is a tree-like directed graph where the nodes represent bodies in the world,
     and the edges represent connections between them.
+    """
+
+    views: List[View] = field(default_factory=list, repr=False)
+    """
+    All views the world is aware of.
     """
 
     def __post_init__(self):

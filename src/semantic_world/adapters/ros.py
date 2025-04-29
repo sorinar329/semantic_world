@@ -1,53 +1,63 @@
 from __future__ import annotations
-import logging
 
 import atexit
+import logging
 import threading
 import time
 from dataclasses import dataclass
 
-from ..geometry import Shape, Mesh, Sphere, Capsule, Cylinder, Box, Color
+from roslaunch.core import get_ros_package_path as get_ros_package_paths
+
+from ..geometry import Shape, Mesh, Sphere, Cylinder, Box, Color
 from ..pose import Vector3, Quaternion, Pose, Header, PoseStamped
 from ..utils import IDGenerator
 from ..world import World
-
 
 try:
     import rospy
     from rospy.rostime import Time as ROSTime
     from visualization_msgs.msg import MarkerArray, Marker
     from geometry_msgs.msg import (Vector3 as ROSVector3, Quaternion as ROSQuaternion, Pose as ROSPose,
-                                   PoseStamped as ROSPoseStamped, Header as ROSHeader, Color as ROSColor,)
+                                   PoseStamped as ROSPoseStamped, Header as ROSHeader, Color as ROSColor, )
 except ImportError:
     logging.warn("Importing ros adapter without rospy available.")
+
 
 def get_ros_package_path(package_name: str) -> str:
     """
     Placeholder for ros integration
     """
-    raise NotImplementedError
+    return [p for p in get_ros_package_paths().split(':') if p.endswith(package_name)][0]
+
 
 id_generator = IDGenerator()
+
 
 def vector3_to_ros_message(obj: Vector3) -> ROSVector3:
     return ROSVector3(x=obj.x, y=obj.y, z=obj.z)
 
+
 def quaternion_to_ros_message(obj: Quaternion) -> ROSQuaternion:
     return ROSQuaternion(x=obj.x, y=obj.y, z=obj.z, w=obj.w)
+
 
 def pose_to_ros_message(obj: Pose) -> ROSPose:
     return ROSPose(position=vector3_to_ros_message(obj.position),
                    orientation=quaternion_to_ros_message(obj.orientation))
 
+
 def header_to_ros_message(obj: Header) -> ROSHeader:
     stamp = ROSTime.from_sec(obj.timestamp.timestamp())
     return ROSHeader(frame_id=obj.frame_id, stamp=stamp, seq=obj.sequence)
 
+
 def pose_stamped_to_ros_message(obj: PoseStamped) -> PoseStamped:
     return ROSPoseStamped(pose=pose_to_ros_message(obj.pose), header=header_to_ros_message(obj.header))
 
+
 def color_to_ros_message(obj: Color):
-    return ROSColor(rgba=vector3_to_ros_message(obj.rgba),)
+    return ROSColor(rgba=vector3_to_ros_message(obj.rgba), )
+
 
 def shape_to_ros_message(obj: Shape) -> Marker:
     marker = Marker()
@@ -62,6 +72,7 @@ def shape_to_ros_message(obj: Shape) -> Marker:
 
     return adapter_methods[type(obj)](obj, marker)
 
+
 def mesh_to_ros_message(obj: Mesh, marker: Marker) -> Marker:
     marker.type = Marker.MESH_RESOURCE
     marker.mesh_resource = "file://" + obj.filename
@@ -69,11 +80,13 @@ def mesh_to_ros_message(obj: Mesh, marker: Marker) -> Marker:
     marker.scale = vector3_to_ros_message(obj.scale)
     return marker
 
+
 def sphere_to_ros_message(obj: Sphere, marker: Marker) -> Marker:
     marker.color = color_to_ros_message(obj.color)
     marker.type = Marker.SPHERE
     marker.scale = vector3_to_ros_message(Vector3(obj.radius * 2, obj.radius * 2, obj.radius * 2))
     return marker
+
 
 def cylinder_to_ros_message(obj: Cylinder, marker: Marker) -> Marker:
     marker.color = color_to_ros_message(obj.color)
@@ -81,11 +94,13 @@ def cylinder_to_ros_message(obj: Cylinder, marker: Marker) -> Marker:
     marker.scale = vector3_to_ros_message(Vector3(obj.radius * 2, obj.radius * 2, obj.length))
     return marker
 
+
 def box_to_ros_message(obj: Box, marker: Marker) -> Marker:
     marker.color = color_to_ros_message(obj.color)
     marker.type = Marker.CUBE
     marker.scale = vector3_to_ros_message(Vector3(obj.length, obj.width, obj.height))
     return marker
+
 
 adapter_methods = {
     Mesh: mesh_to_ros_message,

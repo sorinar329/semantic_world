@@ -1,25 +1,25 @@
 import os
 from dataclasses import dataclass
 
-from typing_extensions import Optional, List, Union
-
-from ..geometry import Shape, Box, Mesh, Cylinder
-from ..pose import Vector3, Quaternion, Pose, Header, PoseStamped
-from ..world import World, Body, Connection
+from typing_extensions import List, Union
 from urdf_parser_py import urdf
 
-from ..geometry import Color
-from ..enums import JointType, Axis
-from ..utils import suppress_stdout_stderr
 from .ros import get_ros_package_path
+from ..enums import JointType, Axis
+from ..geometry import Color
+from ..geometry import Shape, Box, Mesh, Cylinder
+from ..pose import Vector3, Quaternion, Pose, Header, PoseStamped
+from ..utils import suppress_stdout_stderr
+from ..world import World, Body, Connection
 
 joint_type_map = {'unknown': JointType.UNKNOWN,
-                 'revolute': JointType.REVOLUTE,
-                 'continuous': JointType.CONTINUOUS,
-                 'prismatic': JointType.PRISMATIC,
-                 'floating': JointType.FLOATING,
-                 'planar': JointType.PLANAR,
-                 'fixed': JointType.FIXED}
+                  'revolute': JointType.REVOLUTE,
+                  'continuous': JointType.CONTINUOUS,
+                  'prismatic': JointType.PRISMATIC,
+                  'floating': JointType.FLOATING,
+                  'planar': JointType.PLANAR,
+                  'fixed': JointType.FIXED}
+
 
 @dataclass
 class URDFParser:
@@ -33,6 +33,10 @@ class URDFParser:
     """
 
     def parse(self) -> World:
+        # cache_dir = os.path.join(os.getcwd(), '..', '..', '../resources', 'cache')
+        # file_name = os.path.basename(self.file_path)
+        # new_file_path = os.path.join(cache_dir, file_name)
+        # generate_from_description_file(self.file_path, new_file_path)
 
         with open(self.file_path, 'r') as file:
             # Since parsing URDF causes a lot of warning messages which can't be deactivated, we suppress them
@@ -135,10 +139,11 @@ class URDFParser:
         return Mesh(filename=filename, scale=scale,
                     origin=self.as_pose_stamped(self.urdf_pose_to_pose(shape.origin), link))
 
-    def parse_cylinder(self, cylinder: urdf.Cylinder, shape: Union[urdf.Visual, urdf.Collision], link: urdf.Link) -> Cylinder:
+    def parse_cylinder(self, cylinder: urdf.Cylinder, shape: Union[urdf.Visual, urdf.Collision],
+                       link: urdf.Link) -> Cylinder:
         color = self.get_color(shape)
-        return Cylinder(radius=cylinder.radius, length=cylinder.length, origin=self.as_pose_stamped(self.urdf_pose_to_pose(shape.origin), link), color=color)
-
+        return Cylinder(radius=cylinder.radius, length=cylinder.length,
+                        origin=self.as_pose_stamped(self.urdf_pose_to_pose(shape.origin), link), color=color)
 
     def parse_link(self, link: urdf.Link) -> Body:
         """
