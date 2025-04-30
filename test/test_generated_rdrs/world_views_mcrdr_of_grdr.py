@@ -1,7 +1,7 @@
 from semantic_world.world import World
 from semantic_world.world import View
 from ripple_down_rules.datastructures.case import Case, create_case
-from semantic_world.views import Handle
+from semantic_world.views import Handle, Cabinet
 from semantic_world.views import Container
 from semantic_world.views import Drawer
 from typing_extensions import Set
@@ -45,16 +45,16 @@ def classify(case: World) -> Set[View]:
     if len([v for v in case.views if type(v) is Drawer]) > 0:
         def conclusion_140397960439712(case):
             drawers = [v for v in case.views if type(v) is Drawer]
-            prismatic_connections = [c for c in case.connections if c.type == JointType.PRISMATIC and c.child in [drawer.container.body for drawer in drawers]]
+            drawer_container_bodies = [d.container.body for d in drawers]
+            prismatic_connections = [c for c in case.connections if c.type == JointType.PRISMATIC
+                                     and c.child in drawer_container_bodies]
             cabinets = {}
             for pc in prismatic_connections:
                 if pc.parent in cabinets:
                     if pc.child not in [d.container.body for d in cabinets[pc.parent].drawers]:
                         cabinets[pc.parent].drawers.append(Drawer(pc.child, pc.parent))
-                cc_prismatic_connections = [pc for pc in prismatic_connections if pc.parent is cc.body]
-                cabinet_drawer_container_bodies = [pc.child for pc in cc_prismatic_connections]
-                cabinet_drawers = [d for d in drawers if d.container.body in cabinet_drawer_container_bodies]
-                cabinets.append(Cabinet(cc, cabinet_drawers))
+                cabinet_drawer = [d for d in drawers if d.container.body == pc.child][0]
+                cabinets[pc.parent] = Cabinet(Container(pc.parent), [cabinet_drawer])
                 
             return cabinets
             
