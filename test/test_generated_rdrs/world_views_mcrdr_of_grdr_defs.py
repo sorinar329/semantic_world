@@ -4,19 +4,19 @@ from semantic_world.views import Container
 from semantic_world.views import Drawer
 
 
-def conditions_140149685411008(case):
+def conditions_140609304379792(case):
     return True
 
 
-def conclusion_140149685411008(case):
+def conclusion_140609304379792(case):
     return [Handle(b) for b in case.bodies if "handle" in b.name.lower()]
 
 
-def conditions_140149684931312(case):
+def conditions_140609303179136(case):
     return len([v for v in case.views if type(v) is Handle]) > 0
 
 
-def conclusion_140149684931312(case):
+def conclusion_140609303179136(case):
     prismatic_connections = [c for c in case.connections if c.type == JointType.PRISMATIC]
     fixed_connections = [c for c in case.connections if c.type == JointType.FIXED]
     children_of_prismatic_connections = [c.child for c in prismatic_connections]
@@ -26,11 +26,11 @@ def conclusion_140149684931312(case):
     return [Container(b) for b in drawer_containers]
 
 
-def conditions_140149683331920(case):
+def conditions_140609307238000(case):
     return len([v for v in case.views if type(v) is Handle]) > 0 and len([v for v in case.views if type(v) is Container]) > 0
 
 
-def conclusion_140149683331920(case):
+def conclusion_140609307238000(case):
     handles = [v for v in case.views if type(v) is Handle]
     containers = [v for v in case.views if type(v) is Container]
     fixed_connections = [c for c in case.connections if c.type == JointType.FIXED and c.parent in [cont.body for cont in containers] and c.child in [h.body for h in handles]]

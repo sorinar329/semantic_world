@@ -6,21 +6,21 @@ from .world_views_mcrdr_of_grdr_defs import *
 from ripple_down_rules.rdr import MultiClassRDR
 
 
-conclusion_type = (set, Drawer, list, Handle, Container,)
+conclusion_type = (Handle, set, list, Container, Drawer,)
 type_ = MultiClassRDR
 
 
-def classify(case: World) -> Set[Union[Drawer, Handle, Container]]:
+def classify(case: World) -> Set[Union[Handle, Container, Drawer]]:
     if not isinstance(case, Case):
         case = create_case(case, max_recursion_idx=3)
     conclusions = set()
 
-    if conditions_140149685411008(case):
-        conclusions.update(make_set(conclusion_140149685411008(case)))
+    if conditions_140609304379792(case):
+        conclusions.update(make_set(conclusion_140609304379792(case)))
 
-    if conditions_140149684931312(case):
-        conclusions.update(make_set(conclusion_140149684931312(case)))
+    if conditions_140609303179136(case):
+        conclusions.update(make_set(conclusion_140609303179136(case)))
 
-    if conditions_140149683331920(case):
-        conclusions.update(make_set(conclusion_140149683331920(case)))
+    if conditions_140609307238000(case):
+        conclusions.update(make_set(conclusion_140609307238000(case)))
     return conclusions

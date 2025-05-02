@@ -46,7 +46,7 @@ class URDFParserTestCase(unittest.TestCase):
         furniture = ["sofa", "chair"]
         world = self.kitchen_parser.parse()
         world.validate()
-        grdr = GeneralRDR()
+
         use_loaded_answers = True
         save_answers = False
         append = True
@@ -55,6 +55,7 @@ class URDFParserTestCase(unittest.TestCase):
         expert = Human(use_loaded_answers=use_loaded_answers, append=append)
         if use_loaded_answers:
             expert.load_answers(expert_answers_filename)
+        grdr = GeneralRDR()
         for view in [Handle, Container, Drawer, Cabinet]:
             grdr.fit_case(CaseQuery(world, "views", (view,), False), expert=expert)
         if save_answers:
