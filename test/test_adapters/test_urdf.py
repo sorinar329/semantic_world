@@ -48,28 +48,21 @@ class URDFParserTestCase(unittest.TestCase):
         world.validate()
         grdr = GeneralRDR()
         use_loaded_answers = True
-        save_answers = True
+        save_answers = False
         append = True
         expert_answers_filename = os.path.join(self.expert_answers_dir, "kitchen_expert_answers_fit")
         rdr_filename = os.path.join(self.saved_rdrs_dir, "kitchen_rdr")
-        expert = Human(use_loaded_answers=use_loaded_answers)
+        expert = Human(use_loaded_answers=use_loaded_answers, append=append)
         if use_loaded_answers:
             expert.load_answers(expert_answers_filename)
-        try:
-            grdr.fit_case([CaseQuery(world, "views", (View,), False)], expert=expert,
-                          add_extra_conclusions=True)
-        except IndexError as e:
-            if append:
-                expert.use_loaded_answers = False
-                grdr.fit_case([CaseQuery(world, "views", (View,), False)], expert=expert,
-                              add_extra_conclusions=True)
-            else:
-                raise e
+        for view in [Handle, Container, Drawer, Cabinet]:
+            grdr.fit_case(CaseQuery(world, "views", (view,), False), expert=expert)
         if save_answers:
-            expert.save_answers(expert_answers_filename, append=append)
+            expert.save_answers(expert_answers_filename)
         views = grdr.classify(world)
         grdr.write_to_python_file(self.generated_rdrs_dir)
-        # grdr.save(rdr_filename)
+        grdr.save(rdr_filename)
+        loaded_rdr = GeneralRDR.load(rdr_filename)
         print(views)
         drawer_container_names = [v.body.name for values in views.values() for v in values if type(v) is Container]
         print("\n".join(drawer_container_names))
@@ -85,21 +78,13 @@ class URDFParserTestCase(unittest.TestCase):
         append = True
         filename = "../test_expert_answers/kitchen_expert_answers_fit"
         filename = os.path.join(os.path.dirname(__file__), filename)
-        expert = Human(use_loaded_answers=use_loaded_answers)
+        expert = Human(use_loaded_answers=use_loaded_answers, append=append)
         if use_loaded_answers:
             expert.load_answers(filename)
-        try:
-            grdr.fit_case([CaseQuery(world, "views", (View,), False)], expert=expert,
-                          add_extra_conclusions=True)
-        except IndexError as e:
-            if append:
-                expert.use_loaded_answers = False
-                grdr.fit_case([CaseQuery(world, "views", (View,), False)], expert=expert,
-                              add_extra_conclusions=True)
-            else:
-                raise e
+        for view in [Handle, Container, Drawer, Cabinet]:
+            grdr.fit_case(CaseQuery(world, "views", (view,), False), expert=expert)
         if save_answers:
-            expert.save_answers(filename, append=append)
+            expert.save_answers(filename)
         views = grdr.classify(world)
         print(views)
         drawer_container_names = [v.body.name for values in views.values() for v in values if type(v) is Container]
