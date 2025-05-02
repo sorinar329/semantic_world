@@ -6,6 +6,8 @@ import networkx as nx
 
 from .geometry import Shape
 from .utils import IDGenerator
+import spatial_types as cas
+
 
 id_generator = IDGenerator()
 
@@ -84,7 +86,7 @@ class Connection(WorldEntity):
     The child link of the joint.
     """
 
-    origin: TransformationMatrix = None
+    origin: cas.TransformationMatrix = None
     """
     The origin of the joint.
     """
