@@ -5,13 +5,11 @@ from typing_extensions import List, Optional
 import networkx as nx
 
 from .geometry import Shape
+from .prefixed_name import PrefixedName
+from .spatial_types import TransformationMatrix
 from .utils import IDGenerator
 
 id_generator = IDGenerator()
-
-@dataclass
-class PrefixedName:
-    ...
 
 @dataclass
 class WorldEntity:
@@ -74,12 +72,12 @@ class Connection(WorldEntity):
     Represents a connection between two bodies in the world.
     """
 
-    parent: Body = None
+    parent: Body
     """
     The parent link of the joint.
     """
 
-    child: Body = None
+    child: Body
     """
     The child link of the joint.
     """
@@ -88,6 +86,11 @@ class Connection(WorldEntity):
     """
     The origin of the joint.
     """
+
+    def __post_init__(self):
+        if self.origin is None:
+            name = self.parent.name.name + "_T_" + self.child.name.name
+            self.origin = TransformationMatrix(reference_frame=PrefixedName(prefix=self.parent.name.prefix, name=name))
 
     def __hash__(self):
         return hash((self.parent, self.child))
@@ -100,7 +103,7 @@ class World:
     The nodes represent bodies in the world, and the edges represent joins between them.
     """
 
-    root: Body = field(default=Body(name="map", origin=PoseStamped()), kw_only=True)
+    root: Body = field(default=Body(name=PrefixedName(prefix="world", name="root")), kw_only=True)
     """
     The root link of the world.
     """
@@ -129,7 +132,8 @@ class World:
 
     @property
     def connections(self) -> List[Connection]:
-        return [self.kinematic_structure.get_edge_data(*edge)[Connection.__name__] for edge in self.kinematic_structure.edges()]
+        return [self.kinematic_structure.get_edge_data(*edge)[Connection.__name__]
+                for edge in self.kinematic_structure.edges()]
 
     def add_body(self, body: Body):
         """
@@ -150,7 +154,7 @@ class World:
     def get_joint(self, parent: Body, child: Body) -> Connection:
         return self.kinematic_structure.get_edge_data(parent, child)[Connection.__name__]
 
-    def plot_structure(self):
+    def plot_kinematic_structure(self):
         """
         Plots the kinematic structure of the world.
         The plot shows bodies as nodes and connections as edges in a directed graph.
@@ -173,14 +177,14 @@ class World:
         nx.draw_networkx_edges(self.kinematic_structure, pos,
                                edge_color='gray',
                                arrows=True,
-                               arrowsize=20)
+                               arrowsize=50)
 
         # Add link names as labels
-        labels = {node: node.name for node in self.kinematic_structure.nodes()}
+        labels = {node: node.name.name for node in self.kinematic_structure.nodes()}
         nx.draw_networkx_labels(self.kinematic_structure, pos, labels)
 
         # Add joint types as edge labels
-        edge_labels = {(edge[0], edge[1]): edge[2]['Joint'].type.name
+        edge_labels = {(edge[0], edge[1]): edge[2][Connection.__name__].__class__.__name__
                        for edge in self.kinematic_structure.edges(data=True)}
         nx.draw_networkx_edge_labels(self.kinematic_structure, pos, edge_labels)
 
