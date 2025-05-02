@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing_extensions import Optional, List, Union
 
 from ..geometry import Shape, Box, Mesh, Cylinder
-from ..pose import Vector3, Quaternion, Pose, Header, PoseStamped
+from ..spatial_types import Vector3, Quaternion, Pose, Header, PoseStamped
 from ..world import World, Body, Connection
 from urdf_parser_py import urdf
 

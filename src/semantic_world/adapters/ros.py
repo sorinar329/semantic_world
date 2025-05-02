@@ -7,7 +7,7 @@ import time
 from dataclasses import dataclass
 
 from ..geometry import Shape, Mesh, Sphere, Capsule, Cylinder, Box, Color
-from ..pose import Vector3, Quaternion, Pose, Header, PoseStamped
+from ..spatial_types import Vector3, Quaternion, Pose, Header, PoseStamped
 from ..utils import IDGenerator
 from ..world import World
 

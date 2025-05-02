@@ -4,12 +4,14 @@ from dataclasses import dataclass, field
 from typing_extensions import List, Optional
 import networkx as nx
 
-from .enums import JointType, Axis
 from .geometry import Shape
-from .pose import PoseStamped
 from .utils import IDGenerator
 
 id_generator = IDGenerator()
+
+@dataclass
+class PrefixedName:
+    ...
 
 @dataclass
 class WorldEntity:
@@ -34,15 +36,10 @@ class Body(WorldEntity):
     A link is a semantic atom. This means that a link cannot be decomposed into meaningful smaller parts.
     """
 
-    name: str = None
+    name: PrefixedName
     """
     The name of the link. Must be unique in the world.
     If not provided, a unique name will be generated.
-    """
-
-    origin: PoseStamped = PoseStamped()
-    """
-    The pose of the link in the world.
     """
 
     visual: List[Shape] = field(default_factory=list, repr=False)
@@ -56,10 +53,6 @@ class Body(WorldEntity):
     List of shapes that represent the collision geometry of the link.
     The poses of the shapes are relative to the link.
     """
-
-    def __post_init__(self):
-        if not self.name:
-            self.name = f"link_{id_generator(self)}"
 
     def __hash__(self):
         return hash(self.name)
@@ -80,10 +73,6 @@ class Connection(WorldEntity):
     """
     Represents a connection between two bodies in the world.
     """
-    type: JointType = JointType.UNKNOWN
-    """
-    The type of the joint.
-    """
 
     parent: Body = None
     """
@@ -95,33 +84,7 @@ class Connection(WorldEntity):
     The child link of the joint.
     """
 
-    axis: Axis = None
-    """
-    The axis (perhaps multiple) of the joint.
-    """
-    value: float = 0.
-
-    lower_limit: float = -float("inf")
-    """
-    The lower limit of the joint.
-    """
-
-    upper_limit: float = float("inf")
-    """
-    The upper limit of the joint.
-    """
-
-    damping: float = 0.
-    """
-    The damping of the joint.
-    """
-
-    friction: float = 0.
-    """
-    The friction of the joint.
-    """
-
-    origin: PoseStamped = PoseStamped()
+    origin: TransformationMatrix = None
     """
     The origin of the joint.
     """
