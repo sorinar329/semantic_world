@@ -115,12 +115,25 @@ class World:
     and the edges represent connections between them.
     """
 
+    _model_version: int = 0
+    """
+    The version of the model. This increases whenever a change to the kinematic model is made. Mostly triggered
+    by adding/removing bodes and connections.
+    """
+
+    _state_version = 0
+    """
+    The version of the state. This increases whenever a change to the state of the kinematic model is made. 
+    Mostly triggered by updating connection values.
+    """
+
     def __post_init__(self):
         self.add_body(self.root)
 
     def validate(self):
         """
         Validate the world.
+
         The world must be a tree.
         """
         if not nx.is_tree(self.kinematic_structure):
@@ -128,6 +141,9 @@ class World:
 
     @property
     def bodies(self) -> List[Body]:
+        """
+        :return: A list of all bodies in the world.
+        """
         return list(self.kinematic_structure.nodes())
 
     @property
@@ -137,22 +153,34 @@ class World:
 
     def add_body(self, body: Body):
         """
-        Add a link to the world.
+        Add a body to the world.
+
+        :param body: The body to add.
         """
         self.kinematic_structure.add_node(body)
         body._world = self
+        self._model_version += 1
 
     def add_connection(self, connection: Connection):
         """
-        Add a joint to the world.
+        Add a connection to the world.
+
+        :param connection: The connection to add.
         """
         self.add_body(connection.parent)
         self.add_body(connection.child)
         kwargs = {Connection.__name__: connection}
         self.kinematic_structure.add_edge(connection.parent, connection.child, **kwargs)
+        self._model_version += 1
 
-    def get_joint(self, parent: Body, child: Body) -> Connection:
+    def get_connection(self, parent: Body, child: Body) -> Connection:
         return self.kinematic_structure.get_edge_data(parent, child)[Connection.__name__]
+
+    def get_body_by_name(self, name: str) -> Body:
+        return [body for body in self.bodies if body.name.name == name][0]
+
+    def get_body_by_prefix_name(self, name: PrefixedName) -> Body:
+        return [body for body in self.bodies if body.name == name][0]
 
     def plot_kinematic_structure(self):
         """
