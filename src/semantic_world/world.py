@@ -68,6 +68,8 @@ class Body(WorldEntity):
         return hash(self.name)
 
     def __eq__(self, other):
+        if not isinstance(other, Body):
+            return False
         return self.name == other.name
 
 
@@ -160,7 +162,15 @@ class World:
     All views the world is aware of.
     """
 
+    id: int = field(default=None, repr=False)
+    """
+    The unique identifier of the world.
+    If not provided, a unique identifier will be generated.
+    """
+
     def __post_init__(self):
+        if not self.id:
+            self.id = id_generator(self)
         self.add_body(self.root)
 
     def validate(self):
@@ -236,3 +246,11 @@ class World:
         plt.title("World Kinematic Structure")
         plt.axis('off')  # Hide axes
         plt.show()
+
+    def __eq__(self, other):
+        if not isinstance(other, World):
+            return False
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)

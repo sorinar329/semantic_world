@@ -78,6 +78,12 @@ class Bullet(World):
                           basePosition=pose.position.to_list(),
                           baseOrientation=pose.orientation.to_list(), physicsClientId=self._id)
 
+    def __hash__(self):
+        """
+        Returns the hash of the world.
+        """
+        return hash(self._id)
+
 
 class Gui(threading.Thread):
     """

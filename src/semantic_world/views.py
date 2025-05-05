@@ -19,7 +19,10 @@ class Drawer(View):
     handle: Handle
 
 
-@dataclass(unsafe_hash=True)
+@dataclass
 class Cabinet(View):
     container: Container
     drawers: list[Drawer] = field(default_factory=list)
+
+    def __hash__(self):
+        return hash((self.__class__.__name__, self.container))
