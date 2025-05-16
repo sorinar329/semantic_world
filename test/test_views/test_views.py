@@ -15,7 +15,7 @@ class ViewTestCase(unittest.TestCase):
     apartment = os.path.join(urdf_dir, "apartment.urdf")
     main_dir = os.path.join(os.path.dirname(__file__), '..')
     expert_answers_dir = os.path.join(main_dir, "test_expert_answers")
-    generated_rdrs_dir = "test_generated_rdrs"
+    generated_rdrs_dir = os.path.join(main_dir, "test_generated_rdrs")
     saved_rdrs_dir = os.path.join(main_dir, "saved_rdrs")
 
     def setUp(self):
@@ -26,7 +26,7 @@ class ViewTestCase(unittest.TestCase):
         v1 = Handle(1)
         print(hash(v1))
         v2 = Handle(2)
-        print(v1 is v2)
+        self.assertTrue(v1 is not v2)
 
     def test_kitchen_views(self):
         # Views that need to be classified

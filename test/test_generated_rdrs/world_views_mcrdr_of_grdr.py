@@ -5,24 +5,24 @@ from .world_views_mcrdr_of_grdr_defs import *
 from ripple_down_rules.rdr import MultiClassRDR
 
 
-conclusion_type = (Handle, Cabinet, Container, set, list, Drawer,)
+conclusion_type = (Container, Cabinet, Drawer, set, list, Handle,)
 type_ = MultiClassRDR
 
 
-def classify(case: World) -> Set[Union[Handle, Cabinet, Container, Drawer]]:
+def classify(case: World) -> Set[Union[Container, Cabinet, Drawer, Handle]]:
     if not isinstance(case, Case):
         case = create_case(case, max_recursion_idx=3)
     conclusions = set()
 
-    if conditions_55261605499735872923247958423413495616(case):
-        conclusions.update(make_set(conclusion_55261605499735872923247958423413495616(case)))
+    if conditions_90574698325129464513441443063592862114(case):
+        conclusions.update(make_set(conclusion_90574698325129464513441443063592862114(case)))
 
-    if conditions_300822958101218002194183744330332366576(case):
-        conclusions.update(make_set(conclusion_300822958101218002194183744330332366576(case)))
+    if conditions_14920098271685635920637692283091167284(case):
+        conclusions.update(make_set(conclusion_14920098271685635920637692283091167284(case)))
 
-    if conditions_247581782537506706867009757392206822517(case):
-        conclusions.update(make_set(conclusion_247581782537506706867009757392206822517(case)))
+    if conditions_331345798360792447350644865254855982739(case):
+        conclusions.update(make_set(conclusion_331345798360792447350644865254855982739(case)))
 
-    if conditions_302270522254447256087471875001107607132(case):
-        conclusions.update(make_set(conclusion_302270522254447256087471875001107607132(case)))
+    if conditions_35528769484583703815352905256802298589(case):
+        conclusions.update(make_set(conclusion_35528769484583703815352905256802298589(case)))
     return conclusions

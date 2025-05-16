@@ -1,28 +1,28 @@
-from semantic_world.views import Cabinet
-from semantic_world.enums import JointType
-from semantic_world.views import Drawer
 from semantic_world.views import Handle
-from semantic_world.world import World
+from semantic_world.enums import JointType
 from semantic_world.views import Container
+from semantic_world.views import Cabinet
+from semantic_world.world import World
+from semantic_world.views import Drawer
 from typing_extensions import Union
 
 
-def conditions_55261605499735872923247958423413495616(case):
+def conditions_90574698325129464513441443063592862114(case):
     return True
 
 
-def conclusion_55261605499735872923247958423413495616(case):
+def conclusion_90574698325129464513441443063592862114(case):
     def get_value_for_world_views_of_type_handle(case: World) -> Union[set, list, Handle]:
         """Get possible value(s) for World.views of types list/set of Handle"""
         return [Handle(b) for b in case.bodies if "handle" in b.name.lower()]
     return get_value_for_world_views_of_type_handle(case)
 
 
-def conditions_300822958101218002194183744330332366576(case):
+def conditions_14920098271685635920637692283091167284(case):
     return len([v for v in case.views if type(v) is Handle]) > 0
 
 
-def conclusion_300822958101218002194183744330332366576(case):
+def conclusion_14920098271685635920637692283091167284(case):
     def get_value_for_world_views_of_type_container(case: World) -> Union[set, Container, list]:
         """Get possible value(s) for World.views of types list/set of Container"""
         prismatic_connections = [c for c in case.connections if c.type == JointType.PRISMATIC]
@@ -36,11 +36,11 @@ def conclusion_300822958101218002194183744330332366576(case):
     return get_value_for_world_views_of_type_container(case)
 
 
-def conditions_247581782537506706867009757392206822517(case):
+def conditions_331345798360792447350644865254855982739(case):
     return len([v for v in case.views if type(v) is Handle]) > 0 and len([v for v in case.views if type(v) is Container]) > 0
 
 
-def conclusion_247581782537506706867009757392206822517(case):
+def conclusion_331345798360792447350644865254855982739(case):
     def get_value_for_world_views_of_type_drawer(case: World) -> Union[set, list, Drawer]:
         """Get possible value(s) for World.views of types list/set of Drawer"""
         handles = [v for v in case.views if type(v) is Handle]
@@ -58,11 +58,11 @@ def conclusion_247581782537506706867009757392206822517(case):
     return get_value_for_world_views_of_type_drawer(case)
 
 
-def conditions_302270522254447256087471875001107607132(case):
+def conditions_35528769484583703815352905256802298589(case):
     return len([v for v in case.views if type(v) is Drawer]) > 0
 
 
-def conclusion_302270522254447256087471875001107607132(case):
+def conclusion_35528769484583703815352905256802298589(case):
     def get_value_for_world_views_of_type_cabinet(case: World) -> Union[set, Cabinet, list]:
         """Get possible value(s) for World.views of types list/set of Cabinet"""
         drawers = [v for v in case.views if type(v) is Drawer]
