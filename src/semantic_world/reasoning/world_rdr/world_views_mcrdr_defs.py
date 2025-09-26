@@ -1,3 +1,4 @@
+from entity_query_language import rule_mode, infer, entity, in_, let, From
 from typing_extensions import List, Union
 
 from ...views.views import Cabinet, Container, Door, Drawer, Fridge, Handle
@@ -7,6 +8,7 @@ from ...world_description.connections import (
     RevoluteConnection,
 )
 from ...world import World
+from ...world_description.world_entity import Body
 
 
 def conditions_90574698325129464513441443063592862114(case) -> bool:
@@ -22,11 +24,11 @@ def conditions_90574698325129464513441443063592862114(case) -> bool:
 def conclusion_90574698325129464513441443063592862114(case) -> List[Handle]:
     def get_handles(case: World) -> Union[set, list, Handle]:
         """Get possible value(s) for World.views of types list/set of Handle"""
-        return [
-            Handle(b)
-            for b in case.kinematic_structure_entities
-            if "handle" in b.name.name.lower()
-        ]
+        with rule_mode():
+            body = Body(From(case.bodies))
+            query = infer(entity(Handle(body=body), in_("handle", body.name.name.lower())))
+
+        return list(query.evaluate())
 
     return get_handles(case)
 
