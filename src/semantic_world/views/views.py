@@ -130,10 +130,6 @@ class Door(EntryWay):
     handle: Handle
 
 
-@dataclass(eq=False)
-class Fridge(View):
-    body: Body
-    door: Door
 
 
 @dataclass(eq=False)
@@ -192,3 +188,54 @@ class Room(View):
 class Wall(View):
     body: Body
     doors: List[Door] = field(default_factory=list)
+    windows: List[Window] = field(default_factory=list)
+
+#####################################################################################
+
+@dataclass(eq=False)
+class Window(View):
+    body: Body
+
+@dataclass(eq=False)
+class DoupleDoor(View):
+    left_door: Door
+    right_door: Door
+
+@dataclass(eq=False)
+class ArmRest(View):
+    body: Body
+
+@dataclass(eq=False)
+class Base(View):
+    body: Body
+
+@dataclass(eq=False)
+class Leg(View):
+    body: Body
+
+@dataclass(eq=False)
+class Armchair(View):
+    base: Base
+    armrest: List[ArmRest] = field(default_factory=list)
+    leg: List[Leg] = field(default_factory=list)
+
+@dataclass(eq=False)
+class Chair(View):
+    base: Base
+    leg: List[Leg] = field(default_factory=list)
+
+@dataclass(eq=False)
+class Cushion(View):
+    body: Body
+
+@dataclass(eq=False)
+class Sofa(View):
+    base: Base
+    armrest: List[ArmRest] = field(default_factory=list)
+    leg: List[Leg] = field(default_factory=list)
+    cushion: List[Cushion] = field(default_factory=list)
+
+@dataclass(eq=False)
+class Dresser(View):
+    body: Body
+    drawers: List[Drawer] = field(default_factory=list)
