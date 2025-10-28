@@ -4,29 +4,30 @@ import unittest
 from typing import Optional
 
 import sqlalchemy
-from ormatic.utils import drop_database
+from krrood.ormatic.utils import drop_database
+from semantic_digital_twin.semantic_annotations.semantic_annotations import Handle, Door
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from semantic_world.adapters.ros.world_synchronizer import (
+from semantic_digital_twin.adapters.ros.world_synchronizer import (
     StateSynchronizer,
     ModelReloadSynchronizer,
     ModelSynchronizer,
 )
-from semantic_world.adapters.urdf import URDFParser
-from semantic_world.datastructures.prefixed_name import PrefixedName
-from semantic_world.orm.ormatic_interface import Base, WorldMappingDAO
-from semantic_world.spatial_types import Vector3
-from semantic_world.testing import rclpy_node
-from semantic_world.utils import get_semantic_world_directory_root
-from semantic_world.world import World
-from semantic_world.world_description.connections import (
+from semantic_digital_twin.adapters.urdf import URDFParser
+from semantic_digital_twin.datastructures.prefixed_name import PrefixedName
+from semantic_digital_twin.orm.ormatic_interface import Base, WorldMappingDAO
+from semantic_digital_twin.spatial_types import Vector3
+from semantic_digital_twin.testing import rclpy_node
+from semantic_digital_twin.utils import get_semantic_digital_twin_directory_root
+from semantic_digital_twin.world import World
+from semantic_digital_twin.world_description.connections import (
     Connection6DoF,
     FixedConnection,
     ActiveConnection1DOF,
     PrismaticConnection,
 )
-from semantic_world.world_description.world_entity import Body
+from semantic_digital_twin.world_description.world_entity import Body
 
 
 def create_dummy_world(w: Optional[World] = None) -> World:
@@ -212,7 +213,7 @@ def test_model_synchronization_merge_full_world(rclpy_node):
 
     pr2_world = URDFParser.from_file(
         os.path.join(
-            get_semantic_world_directory_root(os.getcwd()),
+            get_semantic_digital_twin_directory_root(os.getcwd()),
             "resources",
             "urdf",
             "pr2_kinematic_tree.urdf",
@@ -342,6 +343,34 @@ def test_ChangeDifHasHardwareInterface(rclpy_node):
 
     synchronizer_1.close()
     synchronizer_2.close()
+
+
+def test_semantic_annotation_modifications(rclpy_node):
+    w1 = World(name="w1")
+    w2 = World(name="w2")
+
+    synchronizer_1 = ModelSynchronizer(
+        node=rclpy_node,
+        world=w1,
+    )
+    synchronizer_2 = ModelSynchronizer(
+        node=rclpy_node,
+        world=w2,
+    )
+
+    b1 = Body(name=PrefixedName("b1"))
+    v1 = Handle(body=b1)
+    v2 = Door(body=b1, handle=v1)
+
+    with w1.modify_world():
+        w1.add_body(b1)
+        w1.add_semantic_annotation(v1)
+        w1.add_semantic_annotation(v2)
+
+    time.sleep(0.2)
+    assert [sa.name for sa in w1.semantic_annotations] == [
+        sa.name for sa in w2.semantic_annotations
+    ]
 
 
 if __name__ == "__main__":

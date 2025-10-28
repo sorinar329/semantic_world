@@ -3,31 +3,38 @@ from copy import deepcopy
 
 import numpy as np
 import pytest
+from semantic_digital_twin.semantic_annotations.semantic_annotations import Handle
 
-from semantic_world.world_description.connections import (
+from semantic_digital_twin.spatial_types import Vector3
+from semantic_digital_twin.world_description.connections import (
     PrismaticConnection,
     RevoluteConnection,
     Connection6DoF,
     FixedConnection,
 )
-from semantic_world.exceptions import (
-    AddingAnExistingViewError,
-    DuplicateViewError,
-    ViewNotFoundError,
+from semantic_digital_twin.exceptions import (
+    AddingAnExistingSemanticAnnotationError,
+    DuplicateSemanticAnnotationError,
+    SemanticAnnotationNotFoundError,
     DuplicateKinematicStructureEntityError,
+    UsageError,
+    MissingWorldModificationContextError,
 )
-from semantic_world.datastructures.prefixed_name import PrefixedName
-from semantic_world.spatial_types.derivatives import Derivatives
+from semantic_digital_twin.datastructures.prefixed_name import PrefixedName
+from semantic_digital_twin.spatial_types.derivatives import Derivatives, DerivativeMap
 
-# from semantic_world.spatial_types.math import rotation_matrix_from_rpy
-from semantic_world.spatial_types.spatial_types import (
+# from semantic_digital_twin.spatial_types.math import rotation_matrix_from_rpy
+from semantic_digital_twin.spatial_types.spatial_types import (
     TransformationMatrix,
     Point3,
     RotationMatrix,
 )
-from semantic_world.spatial_types.symbol_manager import symbol_manager
-from semantic_world.testing import world_setup, pr2_world
-from semantic_world.world_description.world_entity import View, Body
+from semantic_digital_twin.spatial_types.symbol_manager import symbol_manager
+from semantic_digital_twin.testing import world_setup, pr2_world
+from semantic_digital_twin.world_description.world_entity import (
+    SemanticAnnotation,
+    Body,
+)
 
 
 def test_set_state(world_setup):
@@ -355,22 +362,24 @@ def test_compute_relative_pose_only_rotation(world_setup):
     np.testing.assert_array_almost_equal(relative_pose.to_np(), expected_pose)
 
 
-def test_add_view(world_setup):
+def test_add_semantic_annotation(world_setup):
     world, l1, l2, bf, r1, r2 = world_setup
-    v = View(name=PrefixedName("muh"))
-    world.add_view(v)
-    with pytest.raises(AddingAnExistingViewError):
-        world.add_view(v, exists_ok=False)
-    assert world.get_view_by_name(v.name) == v
+    v = SemanticAnnotation(name=PrefixedName("muh"))
+    with world.modify_world():
+        world.add_semantic_annotation(v)
+    with pytest.raises(AddingAnExistingSemanticAnnotationError):
+        world.add_semantic_annotation(v, exists_ok=False)
+    assert world.get_semantic_annotation_by_name(v.name) == v
 
 
-def test_duplicate_view(world_setup):
+def test_duplicate_semantic_annotation(world_setup):
     world, l1, l2, bf, r1, r2 = world_setup
-    v = View(name=PrefixedName("muh"))
-    world.add_view(v)
-    world.views.append(v)
-    with pytest.raises(DuplicateViewError):
-        world.get_view_by_name(v.name)
+    v = SemanticAnnotation(name=PrefixedName("muh"))
+    with world.modify_world():
+        world.add_semantic_annotation(v)
+        world.semantic_annotations.append(v)
+    with pytest.raises(DuplicateSemanticAnnotationError):
+        world.get_semantic_annotation_by_name(v.name)
 
 
 def test_merge_world(world_setup, pr2_world):
@@ -547,12 +556,13 @@ def test_merge_with_pose_rotation(world_setup, pr2_world):
 def test_remove_connection(world_setup):
     world, l1, l2, bf, r1, r2 = world_setup
     connection = world.get_connection(l1, l2)
+    num_dofs = len(world.degrees_of_freedom)
     with world.modify_world():
         world.remove_connection(connection)
         world.remove_kinematic_structure_entity(l2)
     assert connection not in world.connections
-    # dof should still exist because it was a mimic connection.
-    assert connection.dof.name in world.state
+    # dof should still exist because it was a mimic connection, so the number didn't change.
+    assert num_dofs == len(world.degrees_of_freedom)
 
     with world.modify_world():
         world.remove_connection(world.get_connection(r1, r2))
@@ -663,3 +673,147 @@ def test_add_entity_with_duplicate_name(world_setup):
     with pytest.raises(DuplicateKinematicStructureEntityError):
         with world.modify_world():
             world.add_kinematic_structure_entity(body_duplicate)
+
+
+def test_overwrite_dof_limits(world_setup):
+    world, l1, l2, bf, r1, r2 = world_setup
+    connection: PrismaticConnection = world.get_connections_by_type(
+        PrismaticConnection
+    )[0]
+    assert connection.dof.lower_limits.velocity == -1
+    assert connection.dof.upper_limits.velocity == 1
+
+    new_limits = DerivativeMap([0.69, 0.42, 1337, 23])
+
+    connection.raw_dof._overwrite_dof_limits(
+        new_lower_limits=new_limits * -1, new_upper_limits=new_limits
+    )
+    assert connection.dof.lower_limits.position == -new_limits.position
+    assert connection.dof.upper_limits.position == new_limits.position
+    assert connection.dof.lower_limits.velocity == -new_limits.velocity
+    assert connection.dof.upper_limits.velocity == new_limits.velocity
+    assert connection.dof.lower_limits.acceleration == -new_limits.acceleration
+    assert connection.dof.upper_limits.acceleration == new_limits.acceleration
+    assert connection.dof.lower_limits.jerk == -new_limits.jerk
+    assert connection.dof.upper_limits.jerk == new_limits.jerk
+
+    new_limits2 = DerivativeMap([3333, 3333, 3333, 3333])
+
+    connection.raw_dof._overwrite_dof_limits(
+        new_lower_limits=new_limits2 * -1, new_upper_limits=new_limits2
+    )
+    assert connection.dof.lower_limits.position == -new_limits.position
+    assert connection.dof.upper_limits.position == new_limits.position
+    assert connection.dof.lower_limits.velocity == -new_limits.velocity
+    assert connection.dof.upper_limits.velocity == new_limits.velocity
+    assert connection.dof.lower_limits.acceleration == -new_limits.acceleration
+    assert connection.dof.upper_limits.acceleration == new_limits.acceleration
+    assert connection.dof.lower_limits.jerk == -new_limits.jerk
+    assert connection.dof.upper_limits.jerk == new_limits.jerk
+
+
+def test_overwrite_dof_limits_mimic(world_setup):
+    world, l1, l2, bf, r1, r2 = world_setup
+    connection: PrismaticConnection = world.get_connections_by_type(
+        PrismaticConnection
+    )[0]
+    with world.modify_world():
+        body = Body(name=PrefixedName("muh"))
+        mimic_connection = PrismaticConnection(
+            parent=bf,
+            child=body,
+            offset=23,
+            multiplier=-2,
+            axis=Vector3(0, 0, 1),
+            dof_name=connection.dof_name,
+        )
+        world.add_body(body)
+        world.add_connection(mimic_connection)
+
+    # when the multiplier is negative, the vel limits shouldn't be swapped
+    assert np.isclose(
+        mimic_connection.dof.lower_limits.velocity,
+        connection.dof.lower_limits.velocity * 2,
+    )
+    assert np.isclose(
+        mimic_connection.dof.upper_limits.velocity,
+        connection.dof.upper_limits.velocity * 2,
+    )
+
+    new_limits = DerivativeMap([0.69, 0.42, 1337, 23])
+
+    with pytest.raises(UsageError):
+        mimic_connection.dof._overwrite_dof_limits(
+            new_lower_limits=new_limits * -1, new_upper_limits=new_limits
+        )
+
+    mimic_connection.raw_dof._overwrite_dof_limits(
+        new_lower_limits=new_limits * -1, new_upper_limits=new_limits
+    )
+
+    # Check that limits are correctly applied with negative multiplier and offset
+    # Position limits: swapped due to negative multiplier, then scaled and offset applied
+    # Lower becomes: new_limits.position * (-2) + 23 = 0.69 * (-2) + 23 = -1.38 + 23 = 21.62
+    # Upper becomes: (new_limits * -1).position * (-2) + 23 = -0.69 * (-2) + 23 = 1.38 + 23 = 24.38
+    assert np.isclose(mimic_connection.dof.lower_limits.position, 21.62)
+    assert np.isclose(mimic_connection.dof.upper_limits.position, 24.38)
+
+    # Velocity limits: only multiplier applied (no offset), but absolute value for limits
+    # Since we're dealing with limits, velocity should use abs(multiplier) = 2
+    assert np.isclose(
+        mimic_connection.dof.lower_limits.velocity, (new_limits * -1).velocity * 2
+    )
+    assert np.isclose(
+        mimic_connection.dof.upper_limits.velocity, new_limits.velocity * 2
+    )
+
+    # Acceleration limits: only multiplier applied (no offset), absolute value for limits
+    assert np.isclose(
+        mimic_connection.dof.lower_limits.acceleration,
+        (new_limits * -1).acceleration * 2,
+    )
+    assert np.isclose(
+        mimic_connection.dof.upper_limits.acceleration, new_limits.acceleration * 2
+    )
+
+    # Jerk limits: only multiplier applied (no offset), absolute value for limits
+    assert np.isclose(
+        mimic_connection.dof.lower_limits.jerk, (new_limits * -1).jerk * 2
+    )
+    assert np.isclose(mimic_connection.dof.upper_limits.jerk, new_limits.jerk * 2)
+
+    # limits are only applied if the new ones are lower
+    new_limits2 = DerivativeMap([3333, 3333, 3333, 3333])
+
+    mimic_connection.raw_dof._overwrite_dof_limits(
+        new_lower_limits=new_limits2 * -1, new_upper_limits=new_limits2
+    )
+
+    assert np.isclose(mimic_connection.dof.lower_limits.position, 21.62)
+    assert np.isclose(mimic_connection.dof.upper_limits.position, 24.38)
+
+    assert np.isclose(
+        mimic_connection.dof.lower_limits.velocity, (new_limits * -1).velocity * 2
+    )
+    assert np.isclose(
+        mimic_connection.dof.upper_limits.velocity, new_limits.velocity * 2
+    )
+
+    assert np.isclose(
+        mimic_connection.dof.lower_limits.acceleration,
+        (new_limits * -1).acceleration * 2,
+    )
+    assert np.isclose(
+        mimic_connection.dof.upper_limits.acceleration, new_limits.acceleration * 2
+    )
+
+    assert np.isclose(
+        mimic_connection.dof.lower_limits.jerk, (new_limits * -1).jerk * 2
+    )
+    assert np.isclose(mimic_connection.dof.upper_limits.jerk, new_limits.jerk * 2)
+
+
+def test_missing_world_modification_context(world_setup):
+    world, l1, l2, bf, r1, r2 = world_setup
+    with pytest.raises(MissingWorldModificationContextError):
+        world.add_semantic_annotation(Handle(l1))
