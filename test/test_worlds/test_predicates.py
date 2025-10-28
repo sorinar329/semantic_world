@@ -1,5 +1,3 @@
-import threading
-
 import numpy as np
 import pytest
 try:
@@ -7,10 +5,8 @@ try:
 except ImportError:
     rclpy = None
 
-from semantic_world.datastructures.prefixed_name import PrefixedName
-from semantic_world.reasoning.predicates import (
+from semantic_digital_twin.reasoning.predicates import (
     contact,
-    robot_in_collision,
     visible,
     Above,
     Below,
@@ -21,19 +17,25 @@ from semantic_world.reasoning.predicates import (
     is_body_in_region,
     occluding_bodies,
     is_supported_by,
-    is_body_in_gripper,
-    robot_holds_body,
     reachable,
-    blocking,
 )
-from semantic_world.robots import PR2, Camera, ParallelGripper
-from semantic_world.spatial_types.spatial_types import TransformationMatrix
-from semantic_world.testing import *
-from semantic_world.world import World
-from semantic_world.world_description.connections import Connection6DoF, FixedConnection
-from semantic_world.world_description.geometry import Box, Scale, Color
-from semantic_world.world_description.shape_collection import ShapeCollection
-from semantic_world.world_description.world_entity import Body, Region
+from semantic_digital_twin.reasoning.robot_predicates import (
+    robot_in_collision,
+    robot_holds_body,
+    blocking,
+    is_body_in_gripper,
+)
+from semantic_digital_twin.robots.abstract_robot import Camera, ParallelGripper
+from semantic_digital_twin.robots.pr2 import PR2
+from semantic_digital_twin.testing import *
+from semantic_digital_twin.world import World
+from semantic_digital_twin.world_description.connections import (
+    Connection6DoF,
+    FixedConnection,
+)
+from semantic_digital_twin.world_description.geometry import Box, Scale, Color
+from semantic_digital_twin.world_description.shape_collection import ShapeCollection
+from semantic_digital_twin.world_description.world_entity import Body, Region
 
 
 @pytest.fixture(scope="function")
@@ -57,7 +59,7 @@ def two_block_world():
             parent=body_1,
             child=body_2,
             _world=world,
-            origin_expression=TransformationMatrix.from_xyz_rpy(
+            parent_T_connection_expression=TransformationMatrix.from_xyz_rpy(
                 z=3, reference_frame=body_1
             ),
         )
@@ -160,7 +162,7 @@ def test_get_visible_objects(pr2_world: World):
     with pr2_world.modify_world():
         pr2_world.add_connection(Connection6DoF(pr2_world.root, body, _world=pr2_world))
 
-    camera = pr2_world.get_views_by_type(Camera)[0]
+    camera = pr2_world.get_semantic_annotations_by_type(Camera)[0]
 
     assert visible(camera, body)
 
@@ -186,7 +188,7 @@ def test_occluding_bodies(pr2_world: World):
             parent=root,
             child=obstacle,
             _world=pr2_world,
-            origin_expression=TransformationMatrix.from_xyz_rpy(
+            parent_T_connection_expression=TransformationMatrix.from_xyz_rpy(
                 reference_frame=root, x=3, z=0.8
             ),
         )
@@ -194,14 +196,14 @@ def test_occluding_bodies(pr2_world: World):
             parent=root,
             child=occluded_body,
             _world=pr2_world,
-            origin_expression=TransformationMatrix.from_xyz_rpy(
+            parent_T_connection_expression=TransformationMatrix.from_xyz_rpy(
                 reference_frame=root, x=10, z=0.5
             ),
         )
         pr2_world.add_connection(c1)
         pr2_world.add_connection(c2)
 
-    camera = pr2_world.get_views_by_type(Camera)[0]
+    camera = pr2_world.get_semantic_annotations_by_type(Camera)[0]
 
     bodies = occluding_bodies(camera, occluded_body)
     assert obstacle in bodies
@@ -263,7 +265,7 @@ def test_body_in_region(two_block_world):
             parent=center,
             child=region,
             _world=center._world,
-            origin_expression=TransformationMatrix.from_xyz_rpy(
+            parent_T_connection_expression=TransformationMatrix.from_xyz_rpy(
                 z=0.5, reference_frame=center
             ),
         )
@@ -276,8 +278,8 @@ def test_supporting(two_block_world):
     center, top = two_block_world
 
     with center._world.modify_world():
-        top.parent_connection.origin_expression = TransformationMatrix.from_xyz_rpy(
-            reference_frame=center, z=1.0
+        top.parent_connection.parent_T_connection_expression = (
+            TransformationMatrix.from_xyz_rpy(reference_frame=center, z=1.0)
         )
     assert is_supported_by(top, center)
     assert not is_supported_by(center, top)
@@ -288,7 +290,7 @@ def test_is_body_in_gripper(
 ):
     pr2: PR2 = PR2.from_world(pr2_world)
 
-    gripper = pr2_world.get_views_by_type(ParallelGripper)
+    gripper = pr2_world.get_semantic_annotations_by_type(ParallelGripper)
 
     left_gripper = (
         gripper[0]
