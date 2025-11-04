@@ -1,4 +1,5 @@
-from entity_query_language import rule_mode, infer, entity, in_, let, From
+from krrood.entity_query_language.entity import infer, entity, in_, let, From
+from krrood.entity_query_language.symbolic import rule_mode
 from typing_extensions import List, Union
 
 from ...semantic_annotations.semantic_annotations import (

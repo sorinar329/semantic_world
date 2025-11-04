@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
-from krrood.entity_query_language.entity import Symbol
 from probabilistic_model.probabilistic_circuit.rx.helper import uniform_measure_of_event
 from typing_extensions import List
 
@@ -184,49 +183,49 @@ class Wall(SemanticAnnotation):
 #####################################################################################
 
 @dataclass(eq=False)
-class Window(View):
+class Window(SemanticAnnotation):
     body: Body
 
 @dataclass(eq=False)
-class DoupleDoor(View):
+class DoupleDoor(SemanticAnnotation):
     left_door: Door
     right_door: Door
 
 @dataclass(eq=False)
-class ArmRest(View):
+class ArmRest(SemanticAnnotation):
     body: Body
 
 @dataclass(eq=False)
-class Base(View):
+class Base(SemanticAnnotation):
     body: Body
 
 @dataclass(eq=False)
-class Leg(View):
+class Leg(SemanticAnnotation):
     body: Body
 
 @dataclass(eq=False)
-class Armchair(View):
+class Armchair(SemanticAnnotation):
     base: Base
     armrest: List[ArmRest] = field(default_factory=list)
     leg: List[Leg] = field(default_factory=list)
 
 @dataclass(eq=False)
-class Chair(View):
+class Chair(SemanticAnnotation):
     base: Base
     leg: List[Leg] = field(default_factory=list)
 
 @dataclass(eq=False)
-class Cushion(View):
+class Cushion(SemanticAnnotation):
     body: Body
 
 @dataclass(eq=False)
-class Sofa(View):
+class Sofa(SemanticAnnotation):
     base: Base
     armrest: List[ArmRest] = field(default_factory=list)
     leg: List[Leg] = field(default_factory=list)
     cushion: List[Cushion] = field(default_factory=list)
 
 @dataclass(eq=False)
-class Dresser(View):
+class Dresser(SemanticAnnotation):
     body: Body
     drawers: List[Drawer] = field(default_factory=list)

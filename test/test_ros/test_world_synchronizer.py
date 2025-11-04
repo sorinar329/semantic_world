@@ -9,11 +9,17 @@ from semantic_digital_twin.semantic_annotations.semantic_annotations import Hand
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from semantic_digital_twin.adapters.ros.world_synchronizer import (
-    StateSynchronizer,
-    ModelReloadSynchronizer,
-    ModelSynchronizer,
-)
+try:
+    from semantic_digital_twin.adapters.ros.world_synchronizer import (
+        StateSynchronizer,
+        ModelReloadSynchronizer,
+        ModelSynchronizer,
+    )
+except ImportError:
+    StateSynchronizer = None
+    ModelReloadSynchronizer = None
+    ModelSynchronizer = None
+
 from semantic_digital_twin.adapters.urdf import URDFParser
 from semantic_digital_twin.datastructures.prefixed_name import PrefixedName
 from semantic_digital_twin.orm.ormatic_interface import Base, WorldMappingDAO

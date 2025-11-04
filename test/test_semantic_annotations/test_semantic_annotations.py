@@ -148,6 +148,7 @@ def test_handle_semantic_annotation_eql(apartment_world):
         (Drawer, False, None),
         (Cabinet, False, None),
         (Door, False, None),
+        #(Window, False, None),
     ],
 )
 def test_infer_apartment_semantic_annotation(
