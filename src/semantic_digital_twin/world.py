@@ -16,6 +16,7 @@ import rustworkx as rx
 import rustworkx.visit
 import rustworkx.visualization
 from lxml import etree
+from random_events.utils import SubclassJSONSerializer
 from rustworkx import NoEdgeBetweenNodes
 from typing_extensions import (
     Dict,
@@ -50,7 +51,6 @@ from .spatial_computations.raytracer import RayTracer
 from .spatial_types import spatial_types as cas
 from .spatial_types.derivatives import Derivatives
 from .utils import IDGenerator, copy_lru_cache
-from .world_description.connection_factories import ConnectionFactory
 from .world_description.connections import (
     ActiveConnection,
     PassiveConnection,
@@ -351,13 +351,17 @@ class World:
                 body.reset_temporary_collision_config()
 
     @property
-    def root(self) -> Optional[KinematicStructureEntity]:
+    def root(self):
+        return self._root(self._model_version)
+
+    @lru_cache()
+    def _root(self, model_version) -> Optional[KinematicStructureEntity]:
         """
         The root of the world is the unique node with in-degree 0.
 
+        :param model_version: Version of the model used to manage the cache of return values.
         :return: The root of the world.
         """
-
         if not self.kinematic_structure_entities:
             return None
         possible_roots = [
@@ -490,7 +494,7 @@ class World:
     def clear_all_lru_caches(self):
         for method_name in dir(self):
             try:
-                method = getattr(self, method_name)
+                method = getattr(type(self), method_name)
                 if hasattr(method, "cache_clear") and callable(method.cache_clear):
                     method.cache_clear()
             except AttributeError:
@@ -517,8 +521,8 @@ class World:
         for model changes.
         """
         # if not self.world_is_being_modified:
-        self.compile_forward_kinematics_expressions()
         self.clear_all_lru_caches()
+        self.compile_forward_kinematics_expressions()
         self.notify_state_change()
         self._model_version += 1
 
@@ -687,7 +691,9 @@ class World:
             dof.has_hardware_interface = value
 
     def add_connection(
-        self, connection: Connection, handle_duplicates: bool = False
+        self,
+        connection: Connection,
+        handle_duplicates: bool = False,
     ) -> None:
         """
         Add a connection and the entities it connects to the world.
@@ -788,7 +794,7 @@ class World:
 
         return visitor.connections
 
-    def get_bodies_of_branch(
+    def get_kinematic_structure_entities_of_branch(
         self, root: KinematicStructureEntity
     ) -> List[KinematicStructureEntity]:
         """
@@ -797,22 +803,10 @@ class World:
         :param root: The root body of the branch
         :return: List of all bodies in the subtree rooted at the given body (including the root)
         """
-
-        # Create a custom visitor to collect bodies
-        class BodyCollector(rustworkx.visit.DFSVisitor):
-            def __init__(self, world: World):
-                self.world = world
-                self.bodies = []
-
-            def discover_vertex(self, node_index: int, time: int) -> None:
-                """Called when a vertex is first discovered during DFS traversal"""
-                body = self.world.kinematic_structure[node_index]
-                self.bodies.append(body)
-
-        visitor = BodyCollector(self)
-        rx.dfs_search(self.kinematic_structure, [root.index], visitor)
-
-        return visitor.bodies
+        descendants_indices = rx.descendants(self.kinematic_structure, root.index)
+        return [root] + [
+            self.kinematic_structure[index] for index in descendants_indices
+        ]
 
     def get_semantic_annotation_by_name(
         self, name: Union[str, PrefixedName]
@@ -1011,8 +1005,8 @@ class World:
 
             connection = root_connection
             if not connection and self_root:
-                connection = Connection6DoF(
-                    parent=self_root, child=other_root, _world=self
+                connection = Connection6DoF.create_with_dofs(
+                    parent=self_root, child=other_root, world=self
                 )
 
             if connection:
@@ -1043,7 +1037,6 @@ class World:
                 new_connection = FixedConnection(
                     parent=new_parent,
                     child=branch_root,
-                    _world=self,
                     parent_T_connection_expression=new_parent_T_root,
                 )
                 self.add_connection(new_connection)
@@ -1052,8 +1045,8 @@ class World:
                 new_parent_T_root = self.compute_forward_kinematics(
                     new_parent, branch_root
                 )
-                new_connection = Connection6DoF(
-                    parent=new_parent, child=branch_root, _world=self
+                new_connection = Connection6DoF.create_with_dofs(
+                    parent=new_parent, child=branch_root, world=self
                 )
                 self.add_connection(new_connection)
                 self.remove_connection(old_connection)
@@ -1071,8 +1064,8 @@ class World:
         :param pose: world_root_T_other_root, the pose of the other world's root with respect to the current world's root
         """
         with self.modify_world():
-            root_connection = Connection6DoF(
-                parent=self.root, child=other.root, _world=self
+            root_connection = Connection6DoF.create_with_dofs(
+                parent=self.root, child=other.root, world=self
             )
             self.merge_world(other, root_connection)
             root_connection.origin = pose
@@ -1171,6 +1164,7 @@ class World:
             return matches[0]
         raise KeyError(f"Body with name {name} not found")
 
+    @lru_cache(maxsize=None)
     def get_degree_of_freedom_by_name(
         self, name: Union[str, PrefixedName]
     ) -> DegreeOfFreedom:
@@ -1245,24 +1239,6 @@ class World:
         return list(
             self.kinematic_structure.successors(kinematic_structure_entity.index)
         )
-
-    @lru_cache(maxsize=None)
-    def compute_descendent_child_kinematic_structure_entities(
-        self, kinematic_structure_entity: KinematicStructureEntity
-    ) -> List[KinematicStructureEntity]:
-        """
-        Computes all child entities of a given KinematicStructureEntity in the world recursively.
-        :param kinematic_structure_entity: The KinematicStructureEntity for which to compute children.
-        :return: A list of all child KinematicStructureEntities.
-        """
-        children = self.compute_child_kinematic_structure_entities(
-            kinematic_structure_entity
-        )
-        for child in children:
-            children.extend(
-                self.compute_descendent_child_kinematic_structure_entities(child)
-            )
-        return children
 
     @lru_cache(maxsize=None)
     def compute_parent_kinematic_structure_entity(
@@ -1747,8 +1723,16 @@ class World:
                 new_world.add_degree_of_freedom(new_dof)
                 dof_mapping[dof] = new_dof
             for connection in self.connections:
-                con_factory = ConnectionFactory.from_connection(connection)
-                con_factory.create(new_world)
+                new_connection = SubclassJSONSerializer.from_json(connection.to_json())
+                new_connection.parent = (
+                    new_world.get_kinematic_structure_entity_by_name(
+                        new_connection.parent.name
+                    )
+                )
+                new_connection.child = new_world.get_kinematic_structure_entity_by_name(
+                    new_connection.child.name
+                )
+                new_world.add_connection(new_connection)
             for dof in self.degrees_of_freedom:
                 new_world.state[dof.name] = self.state[dof.name].data
         return new_world

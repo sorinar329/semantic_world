@@ -124,7 +124,6 @@ def occluding_bodies(camera: Camera, body: Body) -> List[Body]:
         root_to_copied_body = FixedConnection(
             parent=root,
             child=copied_body,
-            _world=world_without_occlusion,
             parent_T_connection_expression=root_T_body,
         )
         world_without_occlusion.add_connection(root_to_copied_body)
@@ -358,3 +357,23 @@ class InFrontOf(SpatialRelation):
 
     def __call__(self) -> bool:
         return self._signed_distance_along_direction(0) > 0.0
+
+
+@dataclass
+class ContainsType(Predicate):
+    """
+    Predicate that checks if any object in the iterable is of the given type.
+    """
+
+    iterable: Iterable
+    """
+    Iterable to check for objects of the given type.
+    """
+
+    obj_type: Type
+    """
+    Object type to check for.
+    """
+
+    def __call__(self) -> bool:
+        return any(isinstance(obj, self.obj_type) for obj in self.iterable)
