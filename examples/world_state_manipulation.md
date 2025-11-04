@@ -120,7 +120,7 @@ with world.modify_world():
     new_root.collision = [box]
     
     world.add_body(new_root)
-    root_T_dresser = Connection6DoF(new_root, old_root, _world=world)
+    root_T_dresser = Connection6DoF.create_with_dofs(parent=new_root, child=old_root, world=world)
     world.add_connection(root_T_dresser)
 rt = RayTracer(world)
 rt.update_scene()
@@ -135,7 +135,7 @@ from semantic_digital_twin.world_description.world_entity import Connection
 with symbolic_mode():
     free_connection = the(entity(connection := let(type_=Connection, domain=world.connections), connection.parent == world.root)).evaluate()
 with world.modify_world():
-    free_connection.parent_T_connection_expression = TransformationMatrix.from_xyz_rpy(1., 1., 0., 0., 0., 0.5 * np.pi)
+    free_connection.origin = TransformationMatrix.from_xyz_rpy(1., 1., 0., 0., 0., 0.5 * np.pi)
 rt = RayTracer(world)
 rt.update_scene()
 rt.scene.show("jupyter")

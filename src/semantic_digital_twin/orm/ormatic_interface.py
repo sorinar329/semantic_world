@@ -188,11 +188,12 @@ class Point3MappingDAO(
     )
 
 
-class PredicateRelationDAO(
-    Base, DataAccessObject[krrood.entity_query_language.symbol_graph.PredicateRelation]
+class PredicateClassRelationDAO(
+    Base,
+    DataAccessObject[krrood.entity_query_language.symbol_graph.PredicateClassRelation],
 ):
 
-    __tablename__ = "PredicateRelationDAO"
+    __tablename__ = "PredicateClassRelationDAO"
 
     database_id: Mapped[builtins.int] = mapped_column(
         Integer, primary_key=True, use_existing_column=True
@@ -201,17 +202,17 @@ class PredicateRelationDAO(
     inferred: Mapped[builtins.bool] = mapped_column(use_existing_column=True)
 
     source_id: Mapped[int] = mapped_column(
-        ForeignKey("WrappedInstanceDAO.database_id", use_alter=True),
+        ForeignKey("WrappedInstanceMappingDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
     target_id: Mapped[int] = mapped_column(
-        ForeignKey("WrappedInstanceDAO.database_id", use_alter=True),
+        ForeignKey("WrappedInstanceMappingDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
     predicate_id: Mapped[int] = mapped_column(
-        ForeignKey("PredicateDAO.database_id", use_alter=True),
+        ForeignKey("BinaryPredicateDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
@@ -223,14 +224,23 @@ class PredicateRelationDAO(
         use_existing_column=True,
     )
 
-    source: Mapped[WrappedInstanceDAO] = relationship(
-        "WrappedInstanceDAO", uselist=False, foreign_keys=[source_id], post_update=True
+    source: Mapped[WrappedInstanceMappingDAO] = relationship(
+        "WrappedInstanceMappingDAO",
+        uselist=False,
+        foreign_keys=[source_id],
+        post_update=True,
     )
-    target: Mapped[WrappedInstanceDAO] = relationship(
-        "WrappedInstanceDAO", uselist=False, foreign_keys=[target_id], post_update=True
+    target: Mapped[WrappedInstanceMappingDAO] = relationship(
+        "WrappedInstanceMappingDAO",
+        uselist=False,
+        foreign_keys=[target_id],
+        post_update=True,
     )
-    predicate: Mapped[PredicateDAO] = relationship(
-        "PredicateDAO", uselist=False, foreign_keys=[predicate_id], post_update=True
+    predicate: Mapped[BinaryPredicateDAO] = relationship(
+        "BinaryPredicateDAO",
+        uselist=False,
+        foreign_keys=[predicate_id],
+        post_update=True,
     )
 
 
@@ -563,19 +573,19 @@ class PredicateDAO(
     }
 
 
-class PropertyDescriptorDAO(
+class BinaryPredicateDAO(
     PredicateDAO,
-    DataAccessObject[krrood.entity_query_language.predicate.PropertyDescriptor],
+    DataAccessObject[krrood.entity_query_language.predicate.BinaryPredicate],
 ):
 
-    __tablename__ = "PropertyDescriptorDAO"
+    __tablename__ = "BinaryPredicateDAO"
 
     database_id: Mapped[builtins.int] = mapped_column(
         ForeignKey(PredicateDAO.database_id), primary_key=True, use_existing_column=True
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": "PropertyDescriptorDAO",
+        "polymorphic_identity": "BinaryPredicateDAO",
         "inherit_condition": database_id == PredicateDAO.database_id,
     }
 
@@ -596,6 +606,14 @@ class PrefixedNameDAO(
         use_existing_column=True
     )
 
+    worldstatemappingdao_names_id: Mapped[typing.Optional[builtins.int]] = (
+        mapped_column(
+            ForeignKey("WorldStateMappingDAO.database_id", use_alter=True),
+            nullable=True,
+            use_existing_column=True,
+        )
+    )
+
     __mapper_args__ = {
         "polymorphic_identity": "PrefixedNameDAO",
         "inherit_condition": database_id == SymbolDAO.database_id,
@@ -612,32 +630,16 @@ class SymbolGraphMappingDAO(
         Integer, primary_key=True, use_existing_column=True
     )
 
-    instances: Mapped[typing.List[WrappedInstanceDAO]] = relationship(
-        "WrappedInstanceDAO",
-        foreign_keys="[WrappedInstanceDAO.symbolgraphmappingdao_instances_id]",
+    instances: Mapped[typing.List[WrappedInstanceMappingDAO]] = relationship(
+        "WrappedInstanceMappingDAO",
+        foreign_keys="[WrappedInstanceMappingDAO.symbolgraphmappingdao_instances_id]",
         post_update=True,
     )
-    predicate_relations: Mapped[typing.List[PredicateRelationDAO]] = relationship(
-        "PredicateRelationDAO",
-        foreign_keys="[PredicateRelationDAO.symbolgraphmappingdao_predicate_relations_id]",
+    predicate_relations: Mapped[typing.List[PredicateClassRelationDAO]] = relationship(
+        "PredicateClassRelationDAO",
+        foreign_keys="[PredicateClassRelationDAO.symbolgraphmappingdao_predicate_relations_id]",
         post_update=True,
     )
-
-
-class ThingDAO(
-    SymbolDAO, DataAccessObject[krrood.entity_query_language.predicate.Thing]
-):
-
-    __tablename__ = "ThingDAO"
-
-    database_id: Mapped[builtins.int] = mapped_column(
-        ForeignKey(SymbolDAO.database_id), primary_key=True, use_existing_column=True
-    )
-
-    __mapper_args__ = {
-        "polymorphic_identity": "ThingDAO",
-        "inherit_condition": database_id == SymbolDAO.database_id,
-    }
 
 
 class TransformationMatrixMappingDAO(
@@ -761,6 +763,12 @@ class WorldMappingDAO(
         use_existing_column=True
     )
 
+    state_id: Mapped[int] = mapped_column(
+        ForeignKey("WorldStateMappingDAO.database_id", use_alter=True),
+        nullable=True,
+        use_existing_column=True,
+    )
+
     kinematic_structure_entities: Mapped[typing.List[KinematicStructureEntityDAO]] = (
         relationship(
             "KinematicStructureEntityDAO",
@@ -782,6 +790,9 @@ class WorldMappingDAO(
         "DegreeOfFreedomMappingDAO",
         foreign_keys="[DegreeOfFreedomMappingDAO.worldmappingdao_degrees_of_freedom_id]",
         post_update=True,
+    )
+    state: Mapped[WorldStateMappingDAO] = relationship(
+        "WorldStateMappingDAO", uselist=False, foreign_keys=[state_id], post_update=True
     )
 
 
@@ -1054,83 +1065,62 @@ class Connection6DoFDAO(
         use_existing_column=True,
     )
 
-    x_id: Mapped[int] = mapped_column(
-        ForeignKey("DegreeOfFreedomMappingDAO.database_id", use_alter=True),
+    x_name_id: Mapped[int] = mapped_column(
+        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
-    y_id: Mapped[int] = mapped_column(
-        ForeignKey("DegreeOfFreedomMappingDAO.database_id", use_alter=True),
+    y_name_id: Mapped[int] = mapped_column(
+        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
-    z_id: Mapped[int] = mapped_column(
-        ForeignKey("DegreeOfFreedomMappingDAO.database_id", use_alter=True),
+    z_name_id: Mapped[int] = mapped_column(
+        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
-    qx_id: Mapped[int] = mapped_column(
-        ForeignKey("DegreeOfFreedomMappingDAO.database_id", use_alter=True),
+    qx_name_id: Mapped[int] = mapped_column(
+        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
-    qy_id: Mapped[int] = mapped_column(
-        ForeignKey("DegreeOfFreedomMappingDAO.database_id", use_alter=True),
+    qy_name_id: Mapped[int] = mapped_column(
+        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
-    qz_id: Mapped[int] = mapped_column(
-        ForeignKey("DegreeOfFreedomMappingDAO.database_id", use_alter=True),
+    qz_name_id: Mapped[int] = mapped_column(
+        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
-    qw_id: Mapped[int] = mapped_column(
-        ForeignKey("DegreeOfFreedomMappingDAO.database_id", use_alter=True),
+    qw_name_id: Mapped[int] = mapped_column(
+        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
 
-    x: Mapped[DegreeOfFreedomMappingDAO] = relationship(
-        "DegreeOfFreedomMappingDAO",
-        uselist=False,
-        foreign_keys=[x_id],
-        post_update=True,
+    x_name: Mapped[PrefixedNameDAO] = relationship(
+        "PrefixedNameDAO", uselist=False, foreign_keys=[x_name_id], post_update=True
     )
-    y: Mapped[DegreeOfFreedomMappingDAO] = relationship(
-        "DegreeOfFreedomMappingDAO",
-        uselist=False,
-        foreign_keys=[y_id],
-        post_update=True,
+    y_name: Mapped[PrefixedNameDAO] = relationship(
+        "PrefixedNameDAO", uselist=False, foreign_keys=[y_name_id], post_update=True
     )
-    z: Mapped[DegreeOfFreedomMappingDAO] = relationship(
-        "DegreeOfFreedomMappingDAO",
-        uselist=False,
-        foreign_keys=[z_id],
-        post_update=True,
+    z_name: Mapped[PrefixedNameDAO] = relationship(
+        "PrefixedNameDAO", uselist=False, foreign_keys=[z_name_id], post_update=True
     )
-    qx: Mapped[DegreeOfFreedomMappingDAO] = relationship(
-        "DegreeOfFreedomMappingDAO",
-        uselist=False,
-        foreign_keys=[qx_id],
-        post_update=True,
+    qx_name: Mapped[PrefixedNameDAO] = relationship(
+        "PrefixedNameDAO", uselist=False, foreign_keys=[qx_name_id], post_update=True
     )
-    qy: Mapped[DegreeOfFreedomMappingDAO] = relationship(
-        "DegreeOfFreedomMappingDAO",
-        uselist=False,
-        foreign_keys=[qy_id],
-        post_update=True,
+    qy_name: Mapped[PrefixedNameDAO] = relationship(
+        "PrefixedNameDAO", uselist=False, foreign_keys=[qy_name_id], post_update=True
     )
-    qz: Mapped[DegreeOfFreedomMappingDAO] = relationship(
-        "DegreeOfFreedomMappingDAO",
-        uselist=False,
-        foreign_keys=[qz_id],
-        post_update=True,
+    qz_name: Mapped[PrefixedNameDAO] = relationship(
+        "PrefixedNameDAO", uselist=False, foreign_keys=[qz_name_id], post_update=True
     )
-    qw: Mapped[DegreeOfFreedomMappingDAO] = relationship(
-        "DegreeOfFreedomMappingDAO",
-        uselist=False,
-        foreign_keys=[qw_id],
-        post_update=True,
+    qw_name: Mapped[PrefixedNameDAO] = relationship(
+        "PrefixedNameDAO", uselist=False, foreign_keys=[qw_name_id], post_update=True
     )
 
     __mapper_args__ = {
@@ -1155,100 +1145,68 @@ class OmniDriveDAO(
     frozen_for_collision_avoidance: Mapped[builtins.bool] = mapped_column(
         use_existing_column=True
     )
-    translation_velocity_limits: Mapped[builtins.float] = mapped_column(
-        use_existing_column=True
-    )
-    rotation_velocity_limits: Mapped[builtins.float] = mapped_column(
-        use_existing_column=True
-    )
 
-    x_id: Mapped[int] = mapped_column(
-        ForeignKey("DegreeOfFreedomMappingDAO.database_id", use_alter=True),
+    x_name_id: Mapped[int] = mapped_column(
+        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
-    y_id: Mapped[int] = mapped_column(
-        ForeignKey("DegreeOfFreedomMappingDAO.database_id", use_alter=True),
+    y_name_id: Mapped[int] = mapped_column(
+        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
-    z_id: Mapped[int] = mapped_column(
-        ForeignKey("DegreeOfFreedomMappingDAO.database_id", use_alter=True),
+    roll_name_id: Mapped[int] = mapped_column(
+        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
-    roll_id: Mapped[int] = mapped_column(
-        ForeignKey("DegreeOfFreedomMappingDAO.database_id", use_alter=True),
+    pitch_name_id: Mapped[int] = mapped_column(
+        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
-    pitch_id: Mapped[int] = mapped_column(
-        ForeignKey("DegreeOfFreedomMappingDAO.database_id", use_alter=True),
+    yaw_name_id: Mapped[int] = mapped_column(
+        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
-    yaw_id: Mapped[int] = mapped_column(
-        ForeignKey("DegreeOfFreedomMappingDAO.database_id", use_alter=True),
+    x_velocity_name_id: Mapped[int] = mapped_column(
+        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
-    x_vel_id: Mapped[int] = mapped_column(
-        ForeignKey("DegreeOfFreedomMappingDAO.database_id", use_alter=True),
-        nullable=True,
-        use_existing_column=True,
-    )
-    y_vel_id: Mapped[int] = mapped_column(
-        ForeignKey("DegreeOfFreedomMappingDAO.database_id", use_alter=True),
+    y_velocity_name_id: Mapped[int] = mapped_column(
+        ForeignKey("PrefixedNameDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
     )
 
-    x: Mapped[DegreeOfFreedomMappingDAO] = relationship(
-        "DegreeOfFreedomMappingDAO",
+    x_name: Mapped[PrefixedNameDAO] = relationship(
+        "PrefixedNameDAO", uselist=False, foreign_keys=[x_name_id], post_update=True
+    )
+    y_name: Mapped[PrefixedNameDAO] = relationship(
+        "PrefixedNameDAO", uselist=False, foreign_keys=[y_name_id], post_update=True
+    )
+    roll_name: Mapped[PrefixedNameDAO] = relationship(
+        "PrefixedNameDAO", uselist=False, foreign_keys=[roll_name_id], post_update=True
+    )
+    pitch_name: Mapped[PrefixedNameDAO] = relationship(
+        "PrefixedNameDAO", uselist=False, foreign_keys=[pitch_name_id], post_update=True
+    )
+    yaw_name: Mapped[PrefixedNameDAO] = relationship(
+        "PrefixedNameDAO", uselist=False, foreign_keys=[yaw_name_id], post_update=True
+    )
+    x_velocity_name: Mapped[PrefixedNameDAO] = relationship(
+        "PrefixedNameDAO",
         uselist=False,
-        foreign_keys=[x_id],
+        foreign_keys=[x_velocity_name_id],
         post_update=True,
     )
-    y: Mapped[DegreeOfFreedomMappingDAO] = relationship(
-        "DegreeOfFreedomMappingDAO",
+    y_velocity_name: Mapped[PrefixedNameDAO] = relationship(
+        "PrefixedNameDAO",
         uselist=False,
-        foreign_keys=[y_id],
-        post_update=True,
-    )
-    z: Mapped[DegreeOfFreedomMappingDAO] = relationship(
-        "DegreeOfFreedomMappingDAO",
-        uselist=False,
-        foreign_keys=[z_id],
-        post_update=True,
-    )
-    roll: Mapped[DegreeOfFreedomMappingDAO] = relationship(
-        "DegreeOfFreedomMappingDAO",
-        uselist=False,
-        foreign_keys=[roll_id],
-        post_update=True,
-    )
-    pitch: Mapped[DegreeOfFreedomMappingDAO] = relationship(
-        "DegreeOfFreedomMappingDAO",
-        uselist=False,
-        foreign_keys=[pitch_id],
-        post_update=True,
-    )
-    yaw: Mapped[DegreeOfFreedomMappingDAO] = relationship(
-        "DegreeOfFreedomMappingDAO",
-        uselist=False,
-        foreign_keys=[yaw_id],
-        post_update=True,
-    )
-    x_vel: Mapped[DegreeOfFreedomMappingDAO] = relationship(
-        "DegreeOfFreedomMappingDAO",
-        uselist=False,
-        foreign_keys=[x_vel_id],
-        post_update=True,
-    )
-    y_vel: Mapped[DegreeOfFreedomMappingDAO] = relationship(
-        "DegreeOfFreedomMappingDAO",
-        uselist=False,
-        foreign_keys=[y_vel_id],
+        foreign_keys=[y_velocity_name_id],
         post_update=True,
     )
 
@@ -2510,20 +2468,37 @@ class WallDAO(
     }
 
 
-class WrappedInstanceDAO(
-    Base, DataAccessObject[krrood.entity_query_language.symbol_graph.WrappedInstance]
+class WorldStateMappingDAO(
+    Base, DataAccessObject[semantic_digital_twin.orm.model.WorldStateMapping]
 ):
 
-    __tablename__ = "WrappedInstanceDAO"
+    __tablename__ = "WorldStateMappingDAO"
 
     database_id: Mapped[builtins.int] = mapped_column(
         Integer, primary_key=True, use_existing_column=True
     )
 
-    index: Mapped[typing.Optional[builtins.int]] = mapped_column(
-        use_existing_column=True
+    data: Mapped[typing.List[builtins.float]] = mapped_column(
+        JSON, nullable=False, use_existing_column=True
     )
-    inferred: Mapped[builtins.bool] = mapped_column(use_existing_column=True)
+
+    names: Mapped[typing.List[PrefixedNameDAO]] = relationship(
+        "PrefixedNameDAO",
+        foreign_keys="[PrefixedNameDAO.worldstatemappingdao_names_id]",
+        post_update=True,
+    )
+
+
+class WrappedInstanceMappingDAO(
+    Base,
+    DataAccessObject[krrood.entity_query_language.orm.model.WrappedInstanceMapping],
+):
+
+    __tablename__ = "WrappedInstanceMappingDAO"
+
+    database_id: Mapped[builtins.int] = mapped_column(
+        Integer, primary_key=True, use_existing_column=True
+    )
 
     symbolgraphmappingdao_instances_id: Mapped[typing.Optional[builtins.int]] = (
         mapped_column(
@@ -2532,7 +2507,7 @@ class WrappedInstanceDAO(
             use_existing_column=True,
         )
     )
-    instance_id: Mapped[int] = mapped_column(
+    instance_id: Mapped[typing.Optional[builtins.int]] = mapped_column(
         ForeignKey("SymbolDAO.database_id", use_alter=True),
         nullable=True,
         use_existing_column=True,
