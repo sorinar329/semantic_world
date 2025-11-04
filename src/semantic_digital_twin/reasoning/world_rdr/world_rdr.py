@@ -1,14 +1,14 @@
-from ...world import World
-from typing_extensions import Any, Dict
 from ripple_down_rules.datastructures.case import Case, create_case
 from ripple_down_rules.helpers import general_rdr_classify
+from semantic_digital_twin.world import World
+from typing_extensions import Any, Dict
 from . import world_semantic_annotations_mcrdr as semantic_annotations_classifier
 
-name = "world"
+name = 'world'
 case_type = World
-case_name = "World"
+case_name = 'World'
 classifiers_dict = dict()
-classifiers_dict["semantic_annotations"] = semantic_annotations_classifier
+classifiers_dict['semantic_annotations'] = semantic_annotations_classifier
 
 
 def classify(case: World, **kwargs) -> Dict[str, Any]:
